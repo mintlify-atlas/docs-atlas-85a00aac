@@ -1,0 +1,457 @@
+---
+title: Account System
+description: Create an account to save results, track progress, and compete on leaderboards
+---
+
+Monkeytype's account system provides powerful features for tracking your typing progress, saving test results, and competing with others.
+
+## Creating an Account
+
+### Sign Up Process
+
+<Steps>
+  <Step title="Choose Authentication Method">
+    - Email and password
+    - Google OAuth
+    - GitHub OAuth
+  </Step>
+  
+  <Step title="Complete Verification">
+    - Verify CAPTCHA challenge
+    - Choose a unique username
+    - Confirm email address (for email signup)
+  </Step>
+  
+  <Step title="Start Typing">
+    Your results are now automatically saved!
+  </Step>
+</Steps>
+
+<Note>
+  Usernames can be changed once every 30 days. Choose carefully!
+</Note>
+
+### Account Requirements
+
+- Unique username (checked in real-time)
+- Valid email address  
+- Username cannot be on the blocklist
+- CAPTCHA verification required
+
+**Implementation:** `backend/src/api/controllers/user.ts:110-142`
+
+## What Gets Saved
+
+### Test Results
+
+<CardGroup cols={2}>
+  <Card title="Performance Data" icon="chart-line">
+    Every completed test saves:
+    - WPM (words per minute)
+    - Raw WPM (including mistakes)
+    - Accuracy percentage
+    - Character statistics (correct/incorrect/extra/missed)
+    - Test duration and AFK time
+    - Consistency scores
+  </Card>
+  
+  <Card title="Test Metadata" icon="info-circle">
+    Additional information stored:
+    - Test mode and configuration
+    - Language used
+    - Difficulty settings
+    - Timestamp
+    - Restart count
+    - Active tags
+    - Funbox modes used
+  </Card>
+  
+  <Card title="Performance Charts" icon="chart-area">
+    Detailed analytics:
+    - WPM over time chart
+    - Burst speed data (per-word speeds)
+    - Error count progression  
+    - Key spacing and duration timing
+    - Key overlap statistics
+  </Card>
+  
+  <Card title="Personal Bests" icon="trophy">
+    PB tracking for:
+    - Each mode (time/words/quote/custom)
+    - Each mode configuration (15s, 30s, 60s, etc.)
+    - Each language
+    - Each difficulty setting
+    - Tag-specific PBs
+  </Card>
+</CardGroup>
+
+### User Preferences
+
+Your account stores all customization settings:
+- Theme selection and custom themes
+- All typing behavior preferences
+- Sound and visual settings
+- Keyboard layout and display options
+- Result filter presets
+
+**Implementation:** `backend/src/api/controllers/user.ts:535-628`
+
+## Profile Features
+
+### Public Profile
+
+Your profile can display:
+
+<Tabs>
+  <Tab title="Statistics">
+    **Typing Stats:**
+    - Total tests completed
+    - Total tests started
+    - Total time typing
+    - Average WPM
+    - Personal bests for popular modes
+    
+    **Configuration:** `backend/src/api/controllers/user.ts:912-1009`
+  </Tab>
+  
+  <Tab title="Profile Details">
+    **Customizable Information:**
+    - Bio text (sanitized for safety)
+    - Keyboard setup description
+    - Social media links
+    - Selected badge (achievement display)
+    
+    **Privacy Options:**
+    - Show/hide test activity on public profile
+    - Opt out of leaderboards
+    
+    **Implementation:** `backend/src/api/controllers/user.ts:1011-1055`
+  </Tab>
+  
+  <Tab title="Activity Display">
+    **Test Activity Visualization:**
+    - GitHub-style contribution graph
+    - Shows tests completed per day
+    - Covers last 372 days
+    - Premium feature: full history
+    
+    **Leaderboard Rankings:**
+    - All-time leaderboard positions
+    - English 15s and 60s rankings
+    - Rank and total participants shown
+    
+    **Implementation:** `backend/src/api/controllers/user.ts:1201-1236`
+  </Tab>
+  
+  <Tab title="Discord Integration">
+    **Link Discord Account:**
+    - OAuth integration
+    - Display Discord avatar on profile
+    - Enable Discord bot commands
+    - Sync leaderboard opt-out status
+    
+    **Features:**
+    - Update avatar when relinking
+    - Unlink at any time
+    - One Discord account per Monkeytype account
+    
+    **Implementation:** `backend/src/api/controllers/user.ts:630-729`
+  </Tab>
+</Tabs>
+
+## Progress Tracking
+
+### Personal Bests System
+
+<AccordionGroup>
+  <Accordion title="PB Calculation">
+    Personal bests are tracked separately for:
+    - **Mode:** time, words, quote, zen, custom
+    - **Mode2:** specific duration/count (15, 30, 60, 10, 25, etc.)
+    - **Language:** Each language has separate PBs
+    - **Difficulty:** normal, expert, master
+    - **Punctuation:** on/off
+    - **Numbers:** on/off
+    - **Lazy mode:** on/off
+    - **Funbox:** Each funbox combination tracked separately
+    
+    **Retrieval:** `backend/src/api/controllers/user.ts:857-865`
+  </Accordion>
+  
+  <Accordion title="Statistics Overview">
+    Access your typing statistics:
+    - Tests started vs completed ratio
+    - Total time spent typing
+    - Average WPM across all tests
+    - Consistency trends
+    - Improvement over time
+    
+    **Implementation:** `backend/src/api/controllers/user.ts:867-872`
+  </Accordion>
+  
+  <Accordion title="Streak System">
+    Daily typing streak tracking:
+    - Current active streak
+    - Maximum streak achieved
+    - Streak hour offset (configurable once)
+    - Daily test activity requirement
+    
+    **Features:**
+    - Set your timezone offset
+    - Maintain streak across timezones
+    - Premium: detailed streak history
+    
+    **Implementation:** `backend/src/api/controllers/user.ts:1113-1135, 1286-1294`
+  </Accordion>
+</AccordionGroup>
+
+### Test History
+
+<Card title="Result Management" icon="history">
+  **Accessing Results:**
+  - View all past test results
+  - Filter by mode, language, difficulty
+  - Sort by date, WPM, accuracy
+  - Search specific time periods
+  
+  **Result Details:**
+  - Full chart replay data
+  - Keystroke timing analysis
+  - Error patterns
+  - Word-by-word breakdown
+  
+  **Limitations:**
+  - Chart data not stored for tests over 122 seconds (to save storage)
+  - Key spacing and duration data also excluded for long tests
+</Card>
+
+## Organization Features
+
+### Tags System
+
+<Accordion title="Managing Tags">
+  **Tag Features:**
+  - Create custom tags for organizing results
+  - Activate tags before tests
+  - Filter results by tag
+  - Track tag-specific PBs
+  - Edit tag names
+  - Clear tag PBs independently
+  
+  **Use Cases:**
+  - Different keyboard setups
+  - Practice focus areas
+  - Time of day tracking
+  - Mood or environment factors
+  
+  **Implementation:** `backend/src/api/controllers/user.ts:759-804`
+</Accordion>
+
+### Result Filter Presets
+
+<Accordion title="Custom Filters">
+  **Save Filter Combinations:**
+  - Create reusable filter presets
+  - Quick access to specific result sets
+  - Maximum presets per user (configurable)
+  
+  **Filter Options:**
+  - Mode and mode2
+  - Language
+  - Difficulty
+  - Punctuation/Numbers
+  - Date ranges
+  - Tags
+  
+  **Implementation:** `backend/src/api/controllers/user.ts:731-757`
+</Accordion>
+
+## Account Management
+
+### Profile Settings
+
+<Tabs>
+  <Tab title="Username & Email">
+    **Change Username:**
+    - Once every 30 days
+    - Must be unique and available
+    - Instant availability checking
+    - Cannot use blocked names
+    
+    **Update Email:**
+    - Change email address
+    - Re-verification required
+    - Updates Firebase auth
+    
+    **Implementation:** `backend/src/api/controllers/user.ts:360-491`
+  </Tab>
+  
+  <Tab title="Password & Security">
+    **Change Password:**
+    - Update password anytime
+    - Secure Firebase auth integration
+    
+    **Revoke Tokens:**
+    - Sign out all devices
+    - Invalidate all session tokens
+    - Security feature for compromised accounts
+    
+    **Forgot Password:**
+    - Email reset link with CAPTCHA
+    - Secure recovery process
+    
+    **Implementation:** `backend/src/api/controllers/user.ts:493-502, 1137-1144, 247-257`
+  </Tab>
+  
+  <Tab title="Data Management">
+    **Clear Personal Bests:**
+    - Reset all PB records
+    - Removes leaderboard entries
+    - Cannot be undone
+    
+    **Opt Out of Leaderboards:**
+    - Hide from all leaderboards
+    - Still track personal stats
+    - Can opt back in anytime
+    
+    **Implementation:** `backend/src/api/controllers/user.ts:401-431`
+  </Tab>
+  
+  <Tab title="Account Actions">
+    **Reset Account:**
+    - Deletes all results
+    - Removes presets and configs
+    - Clears PBs and leaderboards
+    - Keeps username and email
+    - Unlinks Discord
+    - Cannot be undone
+    
+    **Delete Account:**
+    - Permanently deletes all data
+    - Removes from database and auth
+    - Banned users are blocklisted
+    - Cannot be undone
+    
+    **Implementation:** `backend/src/api/controllers/user.ts:259-358`
+  </Tab>
+</Tabs>
+
+## Social Features
+
+### Quotes System
+
+<Card title="Quote Interaction" icon="quote-right">
+  **Favorite Quotes:**
+  - Save favorite quotes
+  - Quick access to saved quotes  
+  - Maximum favorites limit (configurable)
+  
+  **Rate Quotes:**
+  - Rate quotes after completion
+  - Help improve the quote database
+  - Report inappropriate quotes
+  
+  **Implementation:** `backend/src/api/controllers/user.ts:874-910`
+</Card>
+
+### Friends System (Premium)
+
+<Card title="Friends List" icon="users">
+  Premium users can:
+  - Add friends
+  - View friends' progress
+  - Compare statistics
+  - See online status
+  
+  **Implementation:** `backend/src/api/controllers/user.ts:1296-1310`
+</Card>
+
+## Premium Features
+
+<Note>
+  Premium features may include:
+  - Extended test activity history
+  - Friends system access
+  - Ad-free experience
+  - Additional customization options
+  - Priority support
+  
+  Premium status is checked via: `backend/src/api/controllers/user.ts:595`
+</Note>
+
+## Data Privacy
+
+### What's Stored
+
+**Personal Information:**
+- Username
+- Email address
+- Password (hashed by Firebase)
+- Discord ID (if linked)
+- IP addresses (for security)
+
+**Typing Data:**
+- All test results (unless result saving is disabled)
+- Configuration preferences
+- Custom themes
+- Tags and presets
+
+### What's Not Stored
+
+- Actual typed text (only statistics)
+- Passwords (handled by Firebase Auth)
+- Payment information (handled by payment processor)
+
+### Data Access
+
+- Profile data is public by choice
+- Test results are private
+- Leaderboards show username and scores only
+- You control activity visibility
+
+## Leaderboards
+
+<Accordion title="Competitive Features">
+  **Global Leaderboards:**
+  - Time mode: 15s and 60s
+  - English language
+  - All-time rankings
+  - Daily leaderboards
+  
+  **Requirements:**
+  - Valid test (not too short, no AFK)
+  - Not repeated test
+  - Not opted out
+  - Realistic WPM values
+  
+  **Leaderboard Memory:**
+  - Saves your rank for specific modes
+  - Quick comparison to previous rank
+  - Updated automatically
+  
+  **Implementation:** `backend/src/api/controllers/user.ts:806-815, 1146-1199`
+</Accordion>
+
+## Inbox System
+
+<Accordion title="User Inbox">
+  **Features:**
+  - Receive system notifications
+  - Achievement unlocks
+  - Admin messages
+  - Mark messages as read
+  - Delete messages
+  
+  **Limits:**
+  - Maximum inbox size (configurable)
+  - Unread count displayed
+  
+  **Implementation:** `backend/src/api/controllers/user.ts:1057-1083`
+</Accordion>
+
+## Source Code References
+
+- User controller: `backend/src/api/controllers/user.ts`
+- Authentication: `backend/src/utils/auth.ts`
+- User data model: Referenced throughout user.ts
+- Firebase integration: `frontend/src/ts/firebase.ts`

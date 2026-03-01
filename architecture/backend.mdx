@@ -1,0 +1,696 @@
+---
+title: Backend Architecture
+description: Express API, ts-rest contracts, middleware pipeline, and authentication
+---
+
+The Monkeytype backend is a RESTful API built with **Express.js** and **TypeScript**, designed for high performance, type safety, and security.
+
+## Technology Overview
+
+### Core Stack
+
+| Technology | Version | Purpose |
+|------------|---------|----------|
+| **Express.js** | 5.2.0 | HTTP server framework |
+| **TypeScript** | 6.0.0-beta | Type safety |
+| **ts-rest** | 3.52.1 | Type-safe API contracts |
+| **MongoDB** | 6.3.0 | Primary database |
+| **Redis (ioredis)** | 4.28.5 | Caching and leaderboards |
+| **Firebase Admin** | 12.0.0 | Authentication |
+| **BullMQ** | 1.91.1 | Background job queues |
+
+**Source location**: `backend/src/`
+
+## Project Structure
+
+```
+backend/
+├── src/
+│   ├── api/                   # API layer
+│   │   ├── controllers/       # Business logic
+│   │   ├── routes/            # Route definitions
+│   │   ├── ts-rest-adapter.ts # ts-rest integration
+│   │   └── types.ts           # API types
+│   ├── dal/                   # Data Access Layer
+│   │   ├── user.ts            # User database operations
+│   │   ├── result.ts          # Result database operations
+│   │   ├── leaderboards.ts    # Leaderboard operations
+│   │   ├── config.ts          # Config operations
+│   │   └── *.ts               # Other DAL modules
+│   ├── middlewares/           # Express middleware
+│   │   ├── auth.ts            # Authentication
+│   │   ├── rate-limit.ts      # Rate limiting
+│   │   ├── context.ts         # Request context
+│   │   ├── error.ts           # Error handling
+│   │   └── *.ts               # Other middleware
+│   ├── init/                  # Initialization
+│   │   ├── db.ts              # MongoDB connection
+│   │   ├── redis.ts           # Redis connection
+│   │   ├── firebase-admin.ts  # Firebase setup
+│   │   └── configuration.ts   # Live config
+│   ├── services/              # Business services
+│   ├── utils/                 # Utility functions
+│   ├── queues/                # BullMQ queues
+│   ├── workers/               # Background workers
+│   ├── jobs/                  # Cron jobs
+│   ├── constants/             # Constants
+│   ├── app.ts                 # Express app setup
+│   ├── server.ts              # Server boot
+│   └── version.ts             # Version info
+├── redis-scripts/             # Lua scripts for Redis
+├── docker/                    # Docker configs
+└── package.json
+```
+
+## Application Bootstrap
+
+The server initializes through a carefully orchestrated sequence:
+
+```typescript title="backend/src/server.ts:23"
+async function bootServer(port: number): Promise<Server> {
+  try {
+    Logger.info(`Starting server version ${version}`);
+    
+    // 1. Connect to MongoDB
+    Logger.info("Connecting to database...");
+    await db.connect();
+    Logger.success("Connected to database");
+    
+    // 2. Initialize Firebase Admin SDK
+    Logger.info("Initializing Firebase app instance...");
+    initFirebaseAdmin();
+    
+    // 3. Fetch live configuration
+    Logger.info("Fetching live configuration...");
+    await getLiveConfiguration();
+    await updateFromConfigurationFile();
+    
+    // 4. Initialize email client
+    Logger.info("Initializing email client...");
+    await EmailClient.init();
+    
+    // 5. Connect to Redis
+    Logger.info("Connecting to redis...");
+    await RedisClient.connect();
+    
+    if (RedisClient.isConnected()) {
+      // 6. Initialize BullMQ queues
+      Logger.info("Initializing queues...");
+      queues.forEach((queue) => queue.init(connection));
+      
+      // 7. Start workers
+      Logger.info("Initializing workers...");
+      workers.forEach(async (worker) => {
+        await worker(connection).run();
+      });
+    }
+    
+    // 8. Start cron jobs
+    Logger.info("Starting cron jobs...");
+    jobs.forEach((job) => job.start());
+    
+    // 9. Set up database indices
+    await leaderboardDbSetup();
+    await blocklistDbSetup();
+    await connectionsDbSetup();
+    
+  } catch (error) {
+    Logger.error("Failed to boot server");
+    return process.exit(1);
+  }
+  
+  // 10. Start listening
+  return app.listen(port, () => {
+    Logger.success(`API server listening on port ${port}`);
+  });
+}
+```
+
+## Express Application Setup
+
+### Core Middleware Pipeline
+
+```typescript title="backend/src/app.ts:1"
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+
+function buildApp(): express.Application {
+  const app = express();
+  
+  // 1. Body parsing
+  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json());
+  
+  // 2. Security
+  app.use(cors({ exposedHeaders: [COMPATIBILITY_CHECK_HEADER] }));
+  app.use(helmet());
+  
+  // 3. Trust proxy (for rate limiting)
+  app.set("trust proxy", 1);
+  
+  // 4. Custom middleware
+  app.use(compatibilityCheckMiddleware);  // API version check
+  app.use(contextMiddleware);              // Request context
+  app.use(badAuthRateLimiterHandler);      // Auth attempt limiting
+  app.use(rootRateLimiter);                // Global rate limiting
+  
+  // 5. ETag generation
+  app.set("etag", createETagGenerator({ weak: true }));
+  
+  // 6. API routes
+  addApiRoutes(app);
+  
+  // 7. Error handling (must be last)
+  app.use(errorHandlingMiddleware);
+  
+  return app;
+}
+
+export default buildApp();
+```
+
+### Middleware Execution Order
+
+```
+Request
+  ↓
+1. Body Parser (express.json)
+  ↓
+2. CORS (cors)
+  ↓
+3. Security Headers (helmet)
+  ↓
+4. Compatibility Check (compatibilityCheckMiddleware)
+  ↓
+5. Request Context (contextMiddleware)
+  ↓
+6. Rate Limiting (rootRateLimiter)
+  ↓
+7. ts-rest Routing
+  ↓
+8. Authentication (authenticateTsRestRequest)
+  ↓
+9. Rate Limiting (rateLimitRequest)
+  ↓
+10. Configuration Check (verifyRequiredConfiguration)
+  ↓
+11. Permissions (verifyPermissions)
+  ↓
+12. Request Validation (ts-rest schema validation)
+  ↓
+13. Controller Logic
+  ↓
+14. Error Handler (errorHandlingMiddleware)
+  ↓
+Response
+```
+
+## API Architecture (ts-rest)
+
+### Type-Safe Contracts
+
+Monkeytype uses **ts-rest** for end-to-end type safety:
+
+```typescript title="@monkeytype/contracts"
+import { initContract } from "@ts-rest/core";
+import { z } from "zod";
+
+const c = initContract();
+
+export const contract = c.router({
+  users: {
+    getProfile: {
+      method: "GET",
+      path: "/users/:uid/profile",
+      responses: {
+        200: z.object({
+          data: UserProfileSchema,
+        }),
+        404: z.object({
+          message: z.string(),
+        }),
+      },
+      summary: "Get user profile",
+    },
+  },
+});
+```
+
+### Route Registration
+
+```typescript title="backend/src/api/routes/index.ts:49"
+import { initServer } from "@ts-rest/express";
+import { contract } from "@monkeytype/contracts";
+
+const s = initServer();
+
+// Register all route modules
+const router = s.router(contract, {
+  admin,
+  apeKeys,
+  configs,
+  presets,
+  psas,
+  public: publicStats,
+  leaderboards,
+  results,
+  configuration,
+  dev,
+  users,
+  quotes,
+  webhooks,
+  connections,
+});
+
+// Attach to Express app
+createExpressEndpoints(contract, router, app, {
+  jsonQuery: true,
+  globalMiddleware: [
+    authenticateTsRestRequest(),
+    rateLimitRequest(),
+    verifyRequiredConfiguration(),
+    verifyPermissions(),
+  ],
+});
+```
+
+### Controller Example
+
+```typescript title="backend/src/api/controllers/user.ts"
+import { initServer } from "@ts-rest/express";
+import { contract } from "@monkeytype/contracts";
+import * as UserDAL from "../../dal/user";
+
+const s = initServer();
+
+export const userController = s.router(contract.users, {
+  getProfile: async ({ params, req }) => {
+    // req.ctx contains: decodedToken, configuration, etc.
+    const { uid } = params;
+    
+    // Call Data Access Layer
+    const user = await UserDAL.getUser(uid, "get user profile");
+    
+    if (!user) {
+      return {
+        status: 404,
+        body: { message: "User not found" },
+      };
+    }
+    
+    return {
+      status: 200,
+      body: {
+        data: {
+          name: user.name,
+          addedAt: user.addedAt,
+          // ... other profile data
+        },
+      },
+    };
+  },
+});
+```
+
+## Authentication System
+
+### Authentication Flow
+
+```typescript title="backend/src/middlewares/auth.ts:44"
+export function authenticateTsRestRequest() {
+  return async (req, res, next) => {
+    const { authorization } = req.headers;
+    const options = getMetadata(req).authenticationOptions;
+    
+    let token: DecodedToken;
+    
+    if (options.isPublic) {
+      // Public endpoint - no auth required
+      token = { type: "None", uid: "", email: "" };
+    } else if (authorization?.startsWith("Bearer ")) {
+      // Firebase Bearer token
+      const bearerToken = authorization.slice(7);
+      const decoded = await verifyIdToken(bearerToken);
+      token = {
+        type: "Bearer",
+        uid: decoded.uid,
+        email: decoded.email,
+      };
+    } else if (authorization?.startsWith("ApeKey ")) {
+      // API Key authentication
+      const apeKey = authorization.slice(7);
+      const validated = await validateApeKey(apeKey);
+      token = {
+        type: "ApeKey",
+        uid: validated.uid,
+        email: validated.email,
+      };
+    } else {
+      throw new MonkeyError(401, "Unauthorized");
+    }
+    
+    req.ctx.decodedToken = token;
+    next();
+  };
+}
+```
+
+### Authentication Types
+
+**1. Bearer Token (Firebase)**
+```http
+GET /users/123/profile
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+- Used for user actions
+- Verified via Firebase Admin SDK
+- Short-lived tokens (1 hour)
+
+**2. ApeKey (API Key)**
+```http
+GET /results
+Authorization: ApeKey mk_live_abc123...
+```
+- Used for programmatic access
+- Hashed and stored in database
+- User-generated, long-lived
+
+**3. GitHub Webhook**
+```http
+POST /webhooks/github
+X-Hub-Signature-256: sha256=...
+```
+- HMAC signature verification
+- Used for automated deployments
+
+## Rate Limiting
+
+Monkeytype implements **multi-tiered rate limiting**:
+
+### Global Rate Limiter
+
+```typescript title="backend/src/middlewares/rate-limit.ts"
+import rateLimit from "express-rate-limit";
+
+export const rootRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 120,             // 120 requests per minute
+  message: "Too many requests, please try again later.",
+});
+```
+
+### Endpoint-Specific Limiting
+
+```typescript
+import { RateLimiterRedis } from "rate-limiter-flexible";
+
+const limiter = new RateLimiterRedis({
+  storeClient: redisClient,
+  points: 30,           // 30 requests
+  duration: 60,         // per minute
+  keyPrefix: "rl:results",
+});
+
+// In controller
+await limiter.consume(req.ctx.decodedToken.uid);
+```
+
+### Bad Auth Rate Limiter
+
+```typescript
+// Stricter limits on failed auth attempts
+export const badAuthRateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10,                  // 10 attempts
+  skipSuccessfulRequests: true,
+});
+```
+
+## Data Access Layer (DAL)
+
+The DAL provides a clean abstraction over database operations:
+
+### User DAL Example
+
+```typescript title="backend/src/dal/user.ts:79"
+import { Collection, ObjectId } from "mongodb";
+import * as db from "../init/db";
+
+export const getUsersCollection = (): Collection<DBUser> =>
+  db.collection<DBUser>("users");
+
+export async function addUser(
+  name: string,
+  email: string,
+  uid: string
+): Promise<void> {
+  const newUserDocument: Partial<DBUser> = {
+    name,
+    email,
+    uid,
+    addedAt: Date.now(),
+    personalBests: {
+      time: {},
+      words: {},
+      quote: {},
+      zen: {},
+      custom: {},
+    },
+    testActivity: {},
+  };
+  
+  await getUsersCollection().insertOne(newUserDocument);
+}
+
+export async function getUser(
+  uid: string,
+  stack: string
+): Promise<DBUser> {
+  const user = await getUsersCollection().findOne({ uid });
+  if (!user) throw new MonkeyError(404, "User not found", stack);
+  return user;
+}
+```
+
+### Result DAL Example
+
+```typescript title="backend/src/dal/result.ts:1"
+export async function addResult(
+  uid: string,
+  result: DBResult
+): Promise<{ insertedId: ObjectId }> {
+  const { data: user } = await tryCatch(getUser(uid, "add result"));
+  
+  if (!user) throw new MonkeyError(404, "User not found");
+  
+  result.uid ??= uid;
+  const res = await getResultCollection().insertOne(result);
+  
+  return { insertedId: res.insertedId };
+}
+
+export async function getResults(
+  uid: string,
+  opts?: GetResultsOpts
+): Promise<DBResult[]> {
+  const { onOrAfterTimestamp, offset, limit } = opts ?? {};
+  
+  let query = getResultCollection()
+    .find({ uid, timestamp: { $gte: onOrAfterTimestamp } })
+    .sort({ timestamp: -1 });
+  
+  if (limit) query = query.limit(limit);
+  if (offset) query = query.skip(offset);
+  
+  return await query.toArray();
+}
+```
+
+## Background Jobs
+
+### BullMQ Queues
+
+```typescript title="backend/src/queues/"
+import { Queue } from "bullmq";
+import { Redis } from "ioredis";
+
+class EmailQueue {
+  public queueName = "email";
+  private queue?: Queue;
+  
+  init(connection: Redis): void {
+    this.queue = new Queue(this.queueName, { connection });
+  }
+  
+  async sendVerificationEmail(email: string, token: string) {
+    await this.queue?.add("verification", { email, token });
+  }
+}
+
+export default new EmailQueue();
+```
+
+### Workers
+
+```typescript title="backend/src/workers/"
+import { Worker } from "bullmq";
+
+export default function emailWorker(connection: Redis) {
+  return new Worker("email", async (job) => {
+    const { email, token } = job.data;
+    await sendEmail(email, "Verify your email", generateHtml(token));
+  }, { connection });
+}
+```
+
+### Cron Jobs
+
+```typescript title="backend/src/jobs/"
+import { CronJob } from "cron";
+
+const cleanupJob = new CronJob(
+  "0 0 * * *", // Every day at midnight
+  async () => {
+    await cleanupExpiredSessions();
+    await updateLeaderboards();
+  },
+  null,
+  false,
+  "UTC"
+);
+
+export default [cleanupJob];
+```
+
+## Redis Integration
+
+### Connection Setup
+
+```typescript title="backend/src/init/redis.ts:75"
+import IORedis from "ioredis";
+
+let connection: IORedis.Redis;
+
+export async function connect(): Promise<void> {
+  const { REDIS_URI } = process.env;
+  
+  connection = new IORedis(REDIS_URI, {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+    lazyConnect: true,
+  });
+  
+  await connection.connect();
+  
+  // Load custom Lua scripts
+  loadScripts(connection);
+}
+
+function loadScripts(client: IORedis.Redis): void {
+  const scriptFiles = fs.readdirSync(REDIS_SCRIPTS_DIRECTORY_PATH);
+  
+  scriptFiles.forEach((scriptFile) => {
+    const scriptSource = fs.readFileSync(scriptPath, "utf-8");
+    const scriptName = kebabToCamelCase(scriptFile.split(".")[0]);
+    
+    client.defineCommand(scriptName, { lua: scriptSource });
+  });
+}
+```
+
+### Custom Lua Scripts
+
+Redis operations are optimized with Lua scripts:
+
+```lua
+-- redis-scripts/add-result.lua
+-- Atomically add result to leaderboard
+local scoresKey = KEYS[1]
+local resultsKey = KEYS[2]
+local uid = ARGV[1]
+local score = ARGV[2]
+local data = ARGV[3]
+
+redis.call('ZADD', scoresKey, score, uid)
+redis.call('HSET', resultsKey, uid, data)
+return redis.call('ZRANK', scoresKey, uid)
+```
+
+## Error Handling
+
+### Custom Error Class
+
+```typescript title="backend/src/utils/error.ts"
+export default class MonkeyError extends Error {
+  constructor(
+    public statusCode: number,
+    public message: string,
+    public stack?: string
+  ) {
+    super(message);
+    this.name = "MonkeyError";
+  }
+}
+```
+
+### Error Middleware
+
+```typescript title="backend/src/middlewares/error.ts"
+export default function errorHandlingMiddleware(
+  err: Error,
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  if (err instanceof MonkeyError) {
+    res.status(err.statusCode).json({
+      message: err.message,
+      data: null,
+    });
+  } else {
+    Logger.error(err);
+    Sentry.captureException(err);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+}
+```
+
+## Testing
+
+### Unit Tests
+
+```bash
+pnpm test              # Run unit tests
+pnpm integration-test  # Run integration tests
+pnpm test-coverage     # Generate coverage report
+```
+
+### Integration Tests (Testcontainers)
+
+```typescript
+import { MongoDBContainer } from "testcontainers";
+import { describe, it, beforeAll } from "vitest";
+
+describe("User DAL", () => {
+  let mongoContainer: MongoDBContainer;
+  
+  beforeAll(async () => {
+    mongoContainer = await new MongoDBContainer().start();
+    await db.connect(mongoContainer.getConnectionString());
+  });
+  
+  it("creates user", async () => {
+    await addUser("test", "test@example.com", "uid123");
+    const user = await getUser("uid123", "test");
+    expect(user.name).toBe("test");
+  });
+});
+```
+
+## Next Steps
+
+- [Database Architecture](/architecture/database) - MongoDB and Redis data models
+- [Frontend Architecture](/architecture/frontend) - Client-side architecture

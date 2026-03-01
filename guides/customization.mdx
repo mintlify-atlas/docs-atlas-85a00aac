@@ -1,0 +1,335 @@
+---
+title: Customization Options
+description: Personalize your Monkeytype experience with extensive customization options
+---
+
+Monkeytype offers extensive customization to tailor the typing experience to your preferences. All settings are automatically saved to your account when logged in.
+
+## Appearance Settings
+
+### Visual Customization
+
+<Tabs>
+  <Tab title="Theme System">
+    Choose from 56+ built-in themes or create your own custom theme.
+    
+    **Theme Options:**
+    - Browse theme gallery
+    - Search themes by name
+    - Favorite themes for quick access
+    - Random theme mode
+    - Auto-switch between light/dark themes
+    - Custom theme creator with live preview
+    
+    See the [Themes Guide](/guides/themes) for detailed theme information.
+  </Tab>
+  
+  <Tab title="Font Settings">
+    **Font Family:**
+    - Multiple monospace and sans-serif options
+    - Import custom fonts
+    
+    **Font Size:**
+    - Adjustable from 0.5x to 3.5x
+    - Affects both test area and UI
+    - Auto-adjusts for screen size
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:639-651`
+  </Tab>
+  
+  <Tab title="Display Options">
+    **Color Modes:**
+    - `flipTestColors`: Invert text and background colors
+    - `colorfulMode`: Use theme accent colors for stats
+    
+    **Background:**
+    - Custom background URL support
+    - Adjustable background size (cover/contain/max)
+    - Background filter controls (blur, brightness, opacity, saturation)
+    
+    **Layout:**
+    - `maxLineWidth`: Control text width (0-10, 0=unlimited)
+    - `tapeMode`: Focus on current line (off/letter/word)
+    - `showAllLines`: Display all words at once
+    - `smoothLineScroll`: Animated line transitions
+  </Tab>
+</Tabs>
+
+## Caret Customization
+
+<CardGroup cols={2}>
+  <Card title="Caret Style" icon="i-cursor">
+    **Options:**
+    - `default`: Standard line cursor
+    - `block`: Block-style cursor  
+    - `outline`: Outlined block
+    - `underline`: Underscore style
+    - `carrot`: Triangle pointer
+    - `banana`: Fun animated style
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:473-478`
+  </Card>
+  
+  <Card title="Caret Behavior" icon="sliders">
+    **Smooth Caret:**
+    - Enable animated transitions
+    - Follows typing smoothly
+    
+    **Pace Caret:**
+    - Visual WPM target guide
+    - Modes: off, average, pb, last, custom, daily, tagPb
+    - Custom speed setting available
+    - Style options: default, outline
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:479-522`
+  </Card>
+</CardGroup>
+
+## Sound Settings
+
+<Accordion title="Audio Customization">
+  **Sound Effects:**
+  - `playSoundOnClick`: Typewriter sound for each keystroke
+  - `playSoundOnError`: Error notification sound
+  - `soundVolume`: Adjustable volume (0-100%)
+  
+  **Timing Sounds:**
+  - `playTimeWarning`: Audio alert before time expires
+  
+  **Implementation:** `frontend/src/ts/config-metadata.ts:440-464`
+</Accordion>
+
+## Input Behavior
+
+### Typing Behavior Modes
+
+<AccordionGroup>
+  <Accordion title="Freedom & Confidence">
+    **Freedom Mode:**
+    - Allows backspacing beyond the current word
+    - Disables confidence mode automatically
+    - More flexible correction
+    
+    **Confidence Mode:**
+    - `off`: Normal backspace allowed
+    - `on`: Backspace disabled for current word
+    - `max`: Backspace completely disabled
+    - Forces accuracy over speed
+    - Disables freedom mode and stop on error
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:342-396`
+  </Accordion>
+  
+  <Accordion title="Error Handling">
+    **Stop on Error:**
+    - `off`: Continue typing with errors
+    - `word`: Must correct word before proceeding
+    - `letter`: Must correct each letter immediately
+    
+    **Indicate Typos:**
+    - `off`: No visual indication
+    - `below`: Show correct letter below typo
+    - `replace`: Replace wrong letter with correct one
+    
+    **Hide Extra Letters:**
+    - Visually hides extra characters beyond word length
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:368-420`
+  </Accordion>
+  
+  <Accordion title="Special Input Modes">
+    **Strict Space:**
+    - Space only advances to next word if current word is correct
+    - Increases accuracy requirement
+    
+    **Opposite Shift Mode:**
+    - Requires using opposite hand's shift key
+    - Improves proper touch typing technique
+    
+    **Lazy Mode:**
+    - Automatically replaces accented characters with base letters
+    - Useful for languages with diacritics
+    - Not supported by all languages
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:356-432`
+  </Accordion>
+</AccordionGroup>
+
+## Live Stats Display
+
+<Tabs>
+  <Tab title="Progress Display">
+    **Timer Style:**
+    - `off`: Hidden
+    - `bar`: Progress bar
+    - `text`: Time/words remaining  
+    - `mini`: Compact display
+    
+    **Timer Settings:**
+    - `timerColor`: Main or sub color
+    - `timerOpacity`: 0.25 to 1.0
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:525-560`
+  </Tab>
+  
+  <Tab title="Live Metrics">
+    **Display Styles:**
+    Each metric (WPM, accuracy, burst) can be:
+    - `off`: Hidden
+    - `mini`: Compact number
+    - `text`: Full display
+    - `both`: Number + label
+    
+    **Available Metrics:**
+    - Live WPM (words per minute)
+    - Live accuracy percentage
+    - Live burst speed (current word)
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:531-548`
+  </Tab>
+  
+  <Tab title="Visual Effects">
+    **Highlight Mode:**
+    - `letter`: Highlight current letter
+    - `word`: Highlight current word
+    - `off`: No highlighting
+    
+    **Typed Effect:**
+    - Visual effect for correctly typed letters
+    
+    **Burst Heatmap:**
+    - Color-codes words by typing speed
+    - Shows which words were typed faster/slower
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:561-572, 187-192`
+  </Tab>
+</Tabs>
+
+## Keyboard Display
+
+<Accordion title="Keymap Customization">
+  **Keymap Mode:**
+  - `off`: Hidden
+  - `static`: Always visible
+  - `react`: Shows pressed keys
+  - `next`: Highlights next letter
+  
+  **Keymap Settings:**
+  - `keymapLayout`: Choose keyboard layout
+  - `keymapStyle`: Visual style (staggered, matrix, split)
+  - `keymapLegendStyle`: Label display (lowercase, uppercase, blank, dynamic)
+  - `keymapShowTopRow`: Toggle number row visibility
+  - `keymapSize`: Adjustable size (0.5x to 3.5x)
+  
+  **Configuration:** `frontend/src/ts/config-metadata.ts:652-703`
+</Accordion>
+
+## Behavior Settings
+
+<CardGroup cols={2}>
+  <Card title="Test Control" icon="gamepad">
+    **Quick Restart:**
+    - Key options: tab, esc, enter
+    - Disabled for long tests
+    - Requires shift key modifier
+    
+    **Quick End:**
+    - Bail out during test
+    - Results marked as incomplete
+    
+    **Repeat Quotes:**
+    - `off`: New quote each time
+    - `typing`: Same quote on restart
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:200-211`
+  </Card>
+  
+  <Card title="Visual Aids" icon="eye">
+    **Show Key Tips:**
+    - Hint tooltips on elements
+    
+    **Out of Focus Warning:**
+    - Alert when test loses focus
+    
+    **Caps Lock Warning:**
+    - Visual indicator when caps lock is on
+    
+    **Blind Mode:**
+    - Hide words during test
+    - Ultimate accuracy challenge
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:828-857`
+  </Card>
+</CardGroup>
+
+## Difficulty Modifiers
+
+<Accordion title="Challenge Settings">
+  **Difficulty Levels:**
+  - `normal`: Standard words
+  - `expert`: No backspace allowed
+  - `master`: Must correct errors before proceeding
+  
+  **Minimum Performance:**
+  - `minWpm`: Fail test if WPM drops below threshold
+  - `minAcc`: Fail test if accuracy drops too low  
+  - `minBurst`: Fail test if burst speed is too slow
+  - Custom values available for each
+  
+  **Configuration:** `frontend/src/ts/config-metadata.ts:195-287`
+</Accordion>
+
+## Result Display
+
+<AccordionGroup>
+  <Accordion title="Statistics Display">
+    **Show Personal Best:**
+    - Display PB comparison on results
+    
+    **Show Average:**
+    - Display running average stats
+    
+    **Always Show Decimal Places:**
+    - Force 2 decimal places on all numbers
+    
+    **Typing Speed Unit:**
+    - WPM (words per minute)
+    - CPM (characters per minute)
+    - CPS (characters per second)
+    
+    **Start Graphs at Zero:**
+    - Force chart Y-axis to start at 0
+  </Accordion>
+  
+  <Accordion title="Result Options">
+    **Always Show Words History:**
+    - Display typed words by default
+    
+    **Single List Command Line:**
+    - Simplified command menu
+    
+    **Account Chart:**
+    - Configure profile chart display
+    - Show speed and/or accuracy graphs
+    
+    **Result Saving:**
+    - Toggle result saving on/off
+    - Disabled results are not stored
+  </Accordion>
+</AccordionGroup>
+
+## Saving Your Settings
+
+<Note>
+  All settings are automatically saved:
+  - **Logged out:** Saved to browser localStorage
+  - **Logged in:** Synced to your account
+  - Settings sync across devices when logged in
+  - Export/import config JSON for backup
+</Note>
+
+## Source Code References
+
+- Configuration metadata: `frontend/src/ts/config-metadata.ts`
+- Config system: `frontend/src/ts/config.ts`
+- Settings validation: `frontend/src/ts/config-validation.ts`

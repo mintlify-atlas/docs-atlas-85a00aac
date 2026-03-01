@@ -1,0 +1,459 @@
+---
+title: Themes
+description: Customize your visual experience with 56+ beautiful themes
+---
+
+Monkeytype features an extensive theme system with over 56 built-in themes and the ability to create custom themes. Themes change the color scheme of the entire application.
+
+## Theme System Overview
+
+Themes in Monkeytype control:
+- Background colors
+- Text colors  
+- Caret color
+- Sub-element colors (timers, buttons)
+- Error colors
+- Navigation colors
+
+<Note>
+  All themes are stored as CSS files in `frontend/static/themes/` and are loaded dynamically.
+</Note>
+
+## Built-in Themes
+
+Monkeytype includes 56 professionally designed themes. Here's a selection of popular themes:
+
+### Popular Themes
+
+<CardGroup cols={3}>
+  <Card title="9009" icon="palette">
+    Clean, minimal theme with keyboard-inspired colors.
+    
+    **Style:** Minimal, professional
+  </Card>
+  
+  <Card title="Dracula" icon="moon">
+    The famous dark theme with purple and pink accents.
+    
+    **Style:** Dark, colorful
+    
+    **Special:** Custom navigation colors
+  </Card>
+  
+  <Card title="Nord" icon="snowflake">
+    Arctic, north-bluish color palette.
+    
+    **Style:** Cool, muted
+  </Card>
+  
+  <Card title="Solarized Dark" icon="sun">
+    Popular developer theme with warm contrast.
+    
+    **Style:** Dark, balanced
+  </Card>
+  
+  <Card title="Monokai" icon="code">
+    Classic code editor theme.
+    
+    **Style:** Dark, vibrant
+  </Card>
+  
+  <Card title="Gruvbox" icon="leaf">
+    Retro groove theme with warm colors.
+    
+    **Style:** Warm, vintage
+  </Card>
+</CardGroup>
+
+### Complete Theme List
+
+All 56 available themes:
+
+<Accordion title="View All Themes (A-M)">
+  - 9009
+  - Aether
+  - Aurora
+  - Beach
+  - Bingsu
+  - Blueberry Dark
+  - Blueberry Light
+  - Camping
+  - Catppuccin
+  - Chaos Theory
+  - Cheesecake
+  - Dark Note
+  - Desert Oasis
+  - DMG
+  - Dots
+  - Dracula
+  - Dualshot
+  - Ez Mode
+  - Fire
+  - Froyo
+  - Fruit Chew
+  - Fundamentals
+  - Future Funk
+  - Graen
+  - Grape
+  - Horizon
+  - Husqy
+  - Incognito
+  - Ishtar
+  - Lavender
+  - Lil Dragon
+  - Matrix
+  - Metropolis
+  - Milkshake
+</Accordion>
+
+<Accordion title="View All Themes (M-Z)">
+  - Modern Ink
+  - Moonlight
+  - Mr Sleeves
+  - Oblivion
+  - Phantom
+  - Rainbow Trail
+  - Retrocast
+  - RGB
+  - Sewing Tin
+  - Sewing Tin Light
+  - Shadow
+  - SNES
+  - Solarized Osaka
+  - Stealth
+  - Suisei
+  - Sunset
+  - Taro
+  - Terrazzo
+  - Trackday
+  - Trance
+  - Vesper
+  - Vesper Light
+</Accordion>
+
+## Browsing & Applying Themes
+
+### Theme Selector
+
+<Steps>
+  <Step title="Open Theme Menu">
+    Click the theme button in the header or press `Ctrl/Cmd + Shift + T`
+  </Step>
+  
+  <Step title="Browse Themes">
+    - Scroll through theme previews
+    - Hover to see live preview
+    - Search by name
+    - Filter favorites
+  </Step>
+  
+  <Step title="Apply Theme">
+    Click a theme to apply it immediately. Your selection is saved automatically.
+  </Step>
+</Steps>
+
+### Theme Features
+
+<Tabs>
+  <Tab title="Favorite Themes">
+    **Save Your Favorites:**
+    - Star themes to add to favorites
+    - Quick access to preferred themes
+    - Favorites list in settings
+    - Stored in config: `favThemes` array
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:790-795`
+  </Tab>
+  
+  <Tab title="Random Theme">
+    **Random Theme Modes:**
+    - `off`: Disabled
+    - `on`: Random from all themes
+    - `fav`: Random from favorites only
+    - `light`: Random light themes
+    - `dark`: Random dark themes  
+    - `custom`: Random from your custom themes (requires account)
+    
+    **Behavior:**
+    - Changes theme on page load
+    - Changes theme on test start (optional)
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:757-789`
+  </Tab>
+  
+  <Tab title="Auto Switch">
+    **Automatic Theme Switching:**
+    - Switch between light/dark based on time
+    - Set separate themes for day and night
+    - `themeLight`: Used during daytime
+    - `themeDark`: Used during nighttime
+    - `autoSwitchTheme`: Enable/disable
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:739-756`
+  </Tab>
+</Tabs>
+
+## Custom Themes
+
+### Creating Custom Themes
+
+<Note>
+  Custom themes require an account to save and sync across devices.
+</Note>
+
+<Steps>
+  <Step title="Open Custom Theme Creator">
+    Navigate to Settings > Themes > Custom Theme
+  </Step>
+  
+  <Step title="Choose Colors">
+    Select colors for each element:
+    - Background (`--bg-color`)
+    - Main text (`--main-color`)
+    - Caret (`--caret-color`)
+    - Sub elements (`--sub-color`)
+    - Sub alt color (`--sub-alt-color`)
+    - Text color (`--text-color`)
+    - Error color (`--error-color`)
+    - Error extra color (`--error-extra-color`)
+    - Colorful error color (`--colorful-error-color`)
+    - Colorful error extra color (`--colorful-error-extra-color`)
+  </Step>
+  
+  <Step title="Preview & Save">
+    - See live preview as you edit
+    - Name your theme
+    - Save to your account
+    - Theme syncs across devices
+  </Step>
+</Steps>
+
+### Managing Custom Themes
+
+<CardGroup cols={2}>
+  <Card title="Add Theme" icon="plus">
+    - Create new custom theme
+    - Name and color configuration
+    - Maximum themes per account (configurable)
+    
+    **API:** `backend/src/api/controllers/user.ts:828-836`
+  </Card>
+  
+  <Card title="Edit Theme" icon="edit">
+    - Modify existing custom theme
+    - Change colors or name
+    - Live preview updates
+    
+    **API:** `backend/src/api/controllers/user.ts:847-855`
+  </Card>
+  
+  <Card title="Remove Theme" icon="trash">
+    - Delete custom theme
+    - Cannot be undone
+    - Reverts to default if currently active
+    
+    **API:** `backend/src/api/controllers/user.ts:838-845`
+  </Card>
+  
+  <Card title="Share Themes" icon="share">
+    - Export custom theme as JSON
+    - Share theme code with others
+    - Import themes from community
+  </Card>
+</CardGroup>
+
+### Custom Theme Storage
+
+**Account Storage:**
+- Custom themes saved to user account
+- Retrieved on login: `backend/src/api/controllers/user.ts:817-826`
+- Stored as array with ID, name, and colors
+- Full theme data structure:
+  ```typescript
+  {
+    _id: ObjectId,
+    name: string,
+    colors: [10 color values]
+  }
+  ```
+
+**Configuration:**
+- `customTheme`: Boolean to enable custom theme
+- `customThemeColors`: Array of 10 color values
+- Validation ensures all colors are different: `frontend/src/ts/config-metadata.ts:812-825`
+
+## Theme Modifiers
+
+### Color Adjustments
+
+<AccordionGroup>
+  <Accordion title="Flip Test Colors">
+    **Feature:** `flipTestColors`
+    
+    Inverts the main color and background color in the test area.
+    
+    **Use case:**
+    - Light text on dark background (or vice versa)
+    - Better contrast for some themes
+    - Accessibility preference
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:706-710`
+  </Accordion>
+  
+  <Accordion title="Colorful Mode">
+    **Feature:** `colorfulMode`
+    
+    Uses theme accent colors for various UI elements:
+    - Stats display
+    - Buttons and navigation
+    - Charts and graphs
+    - More vibrant appearance
+    
+    **Configuration:** `frontend/src/ts/config-metadata.ts:712-716`
+  </Accordion>
+</AccordionGroup>
+
+### Custom Backgrounds
+
+<Accordion title="Background Customization">
+  **URL Backgrounds:**
+  
+  **Settings:**
+  - `customBackground`: Image URL
+  - `customBackgroundSize`: cover, contain, or max
+  - `customBackgroundFilter`: Array of filter values [blur, brightness, opacity, saturation]
+  
+  **Filters:**
+  - Blur: 0-10px
+  - Brightness: 0-200%
+  - Opacity: 0-100%  
+  - Saturation: 0-200%
+  
+  **Use cases:**
+  - Personal photos
+  - Aesthetic images
+  - Branding
+  - Subtle textures
+  
+  **Configuration:** `frontend/src/ts/config-metadata.ts:718-738`
+</Accordion>
+
+## Theme Structure
+
+Themes are CSS files that define CSS custom properties:
+
+```css
+:root {
+  --bg-color: #323437;
+  --main-color: #e2b714;
+  --caret-color: #e2b714;
+  --sub-color: #646669;
+  --sub-alt-color: #2c2e31;
+  --text-color: #d1d0c5;
+  --error-color: #ca4754;
+  --error-extra-color: #7e2a33;
+  --colorful-error-color: #ca4754;
+  --colorful-error-extra-color: #7e2a33;
+}
+```
+
+### Color Variables
+
+<Accordion title="Variable Reference">
+  **Core Colors:**
+  - `--bg-color`: Main background
+  - `--main-color`: Primary text and active elements
+  - `--caret-color`: Typing cursor
+  - `--text-color`: General UI text
+  
+  **Secondary Colors:**
+  - `--sub-color`: Inactive/secondary elements
+  - `--sub-alt-color`: Tertiary elements, dividers
+  
+  **Error Colors:**
+  - `--error-color`: Standard error indication
+  - `--error-extra-color`: Extra error indication (unused letters)
+  - `--colorful-error-color`: Colorful mode error
+  - `--colorful-error-extra-color`: Colorful mode extra error
+</Accordion>
+
+## Advanced Customization
+
+Some themes include additional CSS rules for specific elements:
+
+```css
+/* Example: Custom navigation colors (Dracula theme) */
+nav > .textButton:nth-child(1) { color: #ec75c4; }
+nav > .textButton:nth-child(2) { color: #8be9fd; }
+nav > .textButton:nth-child(3) { color: #50fa7b; }
+nav > .textButton:nth-child(4) { color: #f1fa8c; }
+```
+
+**Theme locations:**
+- Built-in: `frontend/static/themes/*.css`
+- Custom: Stored in database, generated dynamically
+
+## Tips for Choosing Themes
+
+<CardGroup cols={2}>
+  <Card title="For Accuracy" icon="bullseye">
+    Choose themes with:
+    - High contrast
+    - Clear error colors
+    - Distinct caret color
+    
+    **Recommended:** 9009, Dracula, Nord
+  </Card>
+  
+  <Card title="For Long Sessions" icon="clock">
+    Choose themes with:
+    - Lower contrast (easier on eyes)
+    - Muted colors
+    - Darker backgrounds
+    
+    **Recommended:** Gruvbox, Moonlight, Solarized Dark
+  </Card>
+  
+  <Card title="For Speed" icon="bolt">
+    Choose themes with:
+    - Minimal distractions
+    - Single-color focus
+    - Clear word boundaries
+    
+    **Recommended:** Stealth, Phantom, Modern Ink
+  </Card>
+  
+  <Card title="For Fun" icon="smile">
+    Choose themes with:
+    - Vibrant colors
+    - Unique styles
+    - Animated elements
+    
+    **Recommended:** RGB, Matrix, Rainbow Trail
+  </Card>
+</CardGroup>
+
+## Accessibility
+
+<Note>
+  When creating or choosing themes, consider:
+  - Color blindness (avoid red/green only differences)
+  - Contrast ratios (WCAG AA: 4.5:1 minimum)
+  - Motion sensitivity (some themes have animations)
+  - Screen reader compatibility (themes don't affect this)
+</Note>
+
+## Community Themes
+
+While custom themes are account-specific, users can:
+- Share theme configurations (color arrays)
+- Submit themes to the project on GitHub
+- Browse community theme collections
+- Import/export theme settings
+
+## Source Code References
+
+- Theme files: `frontend/static/themes/`
+- Theme configuration: `frontend/src/ts/config-metadata.ts:705-825`
+- Custom theme API: `backend/src/api/controllers/user.ts:817-855`
+- Theme colors config: `frontend/src/ts/config.ts`

@@ -1,0 +1,395 @@
+---
+title: Contribution Guidelines
+description: Standards and best practices for contributing to Monkeytype
+---
+
+Follow these guidelines to ensure your contribution is accepted quickly and maintains the quality of the Monkeytype project.
+
+## Pull Request Naming
+
+Monkeytype uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for pull request titles and commit messages. Always include your GitHub username in parentheses at the end.
+
+### Format
+
+```
+type(scope): description (@username)
+```
+
+- **type**: The kind of change (see below)
+- **scope**: Optional. The area affected (e.g., quotes, leaderboard, auth)
+- **description**: Brief description of the change
+- **username**: Your GitHub username
+
+### Types
+
+| Type | Description | Example |
+|------|-------------|--------|
+| `feat` | A new feature | `feat: add dark mode toggle (@username)` |
+| `impr` | An improvement to an existing feature | `impr(quotes): add Spanish quotes (@username)` |
+| `fix` | A bug fix | `fix(leaderboard): show user rank correctly (@user1, @user2)` |
+| `docs` | Documentation only changes | `docs: update contribution guide (@username)` |
+| `style` | Code style changes (formatting, whitespace) | `style: format with Oxfmt (@username)` |
+| `refactor` | Code changes that neither fix bugs nor add features | `refactor: simplify test logic (@username)` |
+| `perf` | Performance improvements | `perf: optimize word generation (@username)` |
+| `test` | Adding or updating tests | `test: add unit tests for results (@username)` |
+| `build` | Build system or dependency changes | `build: upgrade vite to v5 (@username)` |
+| `ci` | CI/CD configuration changes | `ci: add deployment workflow (@username)` |
+| `revert` | Revert a previous commit | `revert: undo previous commit (@username)` |
+| `chore` | Other changes that don't fit above categories | `chore: update dependencies (@username)` |
+
+### Examples
+
+```bash
+feat: add new typing mode (@johndoe)
+impr(quotes): add French quotes (@contributor)
+fix(leaderboard): correct rank calculation (@dev1, @dev2)
+docs: add API documentation (@writer)
+refactor(backend): simplify auth logic (@architect)
+```
+
+<Note>
+  For pull requests with multiple contributors, list all usernames separated by commas.
+</Note>
+
+## Code Standards
+
+### Formatting and Linting
+
+Monkeytype uses [Oxc (Oxfmt and Oxlint)](https://github.com/oxc-project/oxc) for code formatting and linting.
+
+- **Oxfmt**: Automatic code formatting
+- **Oxlint**: Fast TypeScript/JavaScript linter
+
+These tools run automatically via pre-commit hooks. You can also run them manually:
+
+```bash
+# Check formatting
+npm run format-check
+
+# Fix formatting
+npm run format-fix
+
+# Lint code
+npm run lint
+
+# Lint with auto-fix
+npm run lint-fix
+```
+
+<Warning>
+  Commits will be blocked if code doesn't pass formatting and linting checks.
+</Warning>
+
+### TypeScript Guidelines
+
+- Use strict type checking
+- Avoid `any` types when possible
+- Define interfaces for complex data structures
+- Use descriptive variable and function names
+- Add comments for complex logic
+
+### Code Style
+
+- Follow existing code patterns in the file you're editing
+- Keep functions small and focused
+- Use meaningful variable names
+- Add JSDoc comments for public APIs
+- Avoid deeply nested code
+
+## Theme Guidelines
+
+Before submitting a theme, ensure:
+
+### Requirements
+
+- Your theme is **unique** and visually distinct from existing themes
+- Text color is **black, white, or very close** to these colors
+- Theme is added to the themes configuration file
+- The `textColor` property matches the theme's main color
+- Theme is **readable** with both:
+  - "Flip test colors" enabled and disabled
+  - "Colorful mode" enabled and disabled
+
+### Testing Your Theme
+
+Test your theme with different settings:
+
+1. Default mode
+2. Flip test colors enabled
+3. Colorful mode enabled
+4. Both flip test colors and colorful mode enabled
+
+Ensure text remains readable in all combinations.
+
+### Theme Properties
+
+Each theme must define these color properties:
+
+| Property | Description |
+|----------|-------------|
+| `bg` | Background color |
+| `caret` | Typing cursor color |
+| `main` | Primary accent color |
+| `sub` | Secondary text color |
+| `subAlt` | Alternative background color |
+| `text` | Main text color (should be black or white) |
+| `error` | Error text color |
+| `errorExtra` | Error background color |
+| `colorfulError` | Colorful mode error text |
+| `colorfulErrorExtra` | Colorful mode error background |
+
+### Custom CSS
+
+If your theme requires custom CSS:
+
+1. Create a CSS file in `frontend/static/themes/`
+2. Add `hasCss: true` to your theme configuration
+3. Keep custom styles minimal and theme-specific
+
+### Pull Request
+
+When submitting a theme PR:
+
+- Include **screenshots** showing:
+  - The theme in normal mode
+  - The theme with colorful mode
+  - The theme with flip test colors
+- Use the PR naming format: `impr(themes): add [theme_name] (@username)`
+- Describe the inspiration or design concept
+
+For detailed instructions, see [Creating Themes](/contributing/basic-contributions#creating-themes).
+
+## Language Guidelines
+
+### Requirements
+
+- **No expletive or offensive words**
+- Valid JSON format (no trailing commas)
+- Added to both `_list` and `_groups` files
+- File name matches word count:
+  - `language.json` = 200 words
+  - `language_1k.json` = 1,000 words
+  - `language_10k.json` = 10,000 words
+
+### JSON Structure
+
+```json
+{
+  "name": "Language Name",
+  "rightToLeft": false,
+  "ligatures": false,
+  "orderedByFrequency": true,
+  "bcp47": "en-US",
+  "words": [
+    "word1",
+    "word2",
+    "word3"
+  ]
+}
+```
+
+### Field Descriptions
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Display name of the language |
+| `rightToLeft` | boolean | `true` for RTL languages (Arabic, Hebrew, etc.) |
+| `ligatures` | boolean | `true` if letters join together (Arabic, Malayalam, etc.) |
+| `orderedByFrequency` | boolean | `true` if words are sorted by frequency |
+| `bcp47` | string | [IETF language tag](https://en.wikipedia.org/wiki/IETF_language_tag) |
+| `words` | string[] | Array of words (minimum 200) |
+
+### Word Selection
+
+- Use common, everyday words
+- Avoid proper nouns unless commonly used
+- Include words of varying lengths
+- No profanity or offensive content
+- Verify spelling accuracy
+
+### Pull Request
+
+When submitting a language PR:
+
+- Use the format: `impr(languages): add [language] (@username)`
+- Mention if the word list is ordered by frequency
+- Note any special characteristics (RTL, ligatures, etc.)
+- If applicable, credit the source of the word list
+
+For detailed instructions, see [Adding Languages](/contributing/basic-contributions#adding-languages).
+
+## Quote Guidelines
+
+### Requirements
+
+- **No unlawful, abusive, or obscene content**
+- Valid JSON format (no trailing commas)
+- **Not a duplicate** of existing quotes
+- Correct `length` property (character count)
+- Correctly incremented `id` property
+- **Minimum 60 characters** in length
+
+### JSON Structure
+
+```json
+{
+  "text": "The quote text goes here.",
+  "source": "Author Name or Source",
+  "id": 1234,
+  "length": 25
+}
+```
+
+### Field Descriptions
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `text` | string | The quote text (min 60 characters) |
+| `source` | string | Author or source of the quote |
+| `id` | number | Unique ID (increment from last quote) |
+| `length` | number | Character count of the text |
+
+### Quote Selection
+
+- Choose meaningful or interesting quotes
+- Verify attribution accuracy
+- Avoid controversial or sensitive content
+- Check for duplicates in the existing file
+- Ensure proper grammar and punctuation
+
+### Non-English Quotes
+
+For quotes not in English:
+
+- Include **translations** in your PR description
+- This helps maintainers verify the content
+- Explain any cultural context if relevant
+
+### Pull Request
+
+When submitting a quote PR:
+
+- Use the format: `impr(quotes): add [language] quotes (@username)`
+- For non-English quotes, include translations in the description
+- Mention the number of quotes added
+- Verify all IDs are sequential
+
+For detailed instructions, see [Adding Quotes](/contributing/basic-contributions#adding-quotes).
+
+## Layout Guidelines
+
+If you want to contribute keyboard layouts:
+
+1. Check the existing layouts in `frontend/static/layouts/`
+2. Follow the same JSON structure as existing layouts
+3. Ensure accurate key mappings
+4. Test thoroughly with the typing test
+
+For more details, refer to the [LAYOUTS.md](https://github.com/monkeytypegame/monkeytype/blob/master/docs/LAYOUTS.md) file in the repository.
+
+## General Best Practices
+
+### Before Submitting
+
+- [ ] Test your changes thoroughly
+- [ ] Run linting and formatting tools
+- [ ] Verify all tests pass
+- [ ] Check for console errors
+- [ ] Update documentation if needed
+- [ ] Take screenshots for visual changes
+- [ ] Review your own PR first
+
+### Writing Good Descriptions
+
+- Explain **what** changed and **why**
+- Provide context for the change
+- Link to related issues
+- Add screenshots or GIFs for UI changes
+- List any breaking changes
+- Mention testing performed
+
+### Responding to Feedback
+
+- Be receptive to suggestions
+- Ask questions if feedback is unclear
+- Make requested changes promptly
+- Thank reviewers for their time
+- Update your PR when ready for re-review
+
+### Multiple Contributors
+
+If multiple people worked on the PR:
+
+- List all contributors in the PR title: `(@user1, @user2, @user3)`
+- Credit specific contributions in the description
+- Ensure all contributors are acknowledged
+
+## Asset Validation
+
+Before submitting changes to languages, quotes, or themes, run validation:
+
+```bash
+# Validate all assets
+npm run check-assets
+
+# Validate specific types
+npm run check-assets-quotes
+npm run check-assets-languages
+npm run check-assets-others
+```
+
+Fix any reported errors before submitting your PR.
+
+## Commit Messages
+
+While pull request titles follow Conventional Commits, individual commit messages should:
+
+- Be descriptive and clear
+- Start with a lowercase verb ("add", "fix", "update", etc.)
+- Keep the first line under 72 characters
+- Add more details in the body if needed
+
+### Good Commit Messages
+
+```bash
+fix: correct leaderboard rank display
+add: Spanish quote collection
+update: theme color contrast for accessibility
+refactor: simplify authentication flow
+```
+
+### Avoid
+
+```bash
+fixed stuff
+update
+changes
+wip
+```
+
+## Documentation
+
+If your change affects user-facing features:
+
+- Update relevant documentation
+- Add code comments for complex logic
+- Update API documentation if applicable
+- Consider adding examples
+
+## Questions and Support
+
+If you have questions about these guidelines:
+
+- Ask in the `#development` channel on [Discord](https://discord.gg/monkeytype)
+- Open a discussion on [GitHub Discussions](https://github.com/monkeytypegame/monkeytype/discussions)
+- Contact maintainers on [GitHub](https://github.com/Miodec)
+
+## Enforcement
+
+These guidelines help maintain code quality and consistency. Pull requests that don't follow these guidelines may be:
+
+- Requested to make changes
+- Delayed in review
+- Closed if changes aren't made
+
+Following these guidelines ensures a smooth contribution process and faster acceptance of your work.

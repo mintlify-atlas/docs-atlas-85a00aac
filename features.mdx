@@ -1,0 +1,636 @@
+---
+title: Features Overview
+description: Explore all the powerful features Monkeytype has to offer
+---
+
+# Features Overview
+
+Monkeytype offers a comprehensive set of features designed to make typing practice engaging, customizable, and effective. From basic typing tests to advanced challenge modes, here's everything you need to know.
+
+## Core Features
+
+<CardGroup cols={2}>
+  <Card title="Multiple Test Modes" icon="gamepad">
+    Choose from time-based, word count, quotes, zen mode, and custom text tests to match your practice goals.
+  </Card>
+  
+  <Card title="Real-time Statistics" icon="chart-line">
+    Live WPM, accuracy, and error tracking as you type, with detailed post-test analytics and graphs.
+  </Card>
+  
+  <Card title="Theme Customization" icon="palette">
+    Over 400 built-in themes plus the ability to create custom themes with 10 customizable color values.
+  </Card>
+  
+  <Card title="Account System" icon="database">
+    Cloud-saved test history, personal bests tracking, and cross-device synchronization via Firebase.
+  </Card>
+  
+  <Card title="Leaderboards" icon="trophy">
+    Daily and weekly leaderboards with XP rewards, plus all-time leaderboards for each mode and language.
+  </Card>
+  
+  <Card title="Funbox Modes" icon="box">
+    40+ fun and challenging test modifiers that add variety and difficulty to your typing practice.
+  </Card>
+  
+  <Card title="Language Support" icon="globe">
+    Type in numerous languages with native word lists, supporting everything from English to less common languages.
+  </Card>
+  
+  <Card title="API Access" icon="plug">
+    Comprehensive REST API with authentication via API keys for building integrations and third-party apps.
+  </Card>
+</CardGroup>
+
+## Test Modes
+
+### Time Mode
+
+Test your typing speed for a specific duration. This is the most popular mode for benchmarking.
+
+**Available durations:**
+- 15 seconds (quick benchmark)
+- 30 seconds (standard)
+- 60 seconds (medium)
+- 120 seconds (endurance)
+- Custom duration (any positive integer)
+
+**Code reference:** Time mode configuration is defined in `packages/schemas/src/shared.ts:40-52`
+
+```typescript
+export const DefaultTimeModeSchema = z.union([
+  z.literal("15"),
+  z.literal("30"),
+  z.literal("60"),
+  z.literal("120"),
+]);
+```
+
+### Words Mode
+
+Type a specific number of words. Great for consistent practice sessions.
+
+**Available word counts:**
+- 10 words (quick test)
+- 25 words (short)
+- 50 words (standard)
+- 100 words (long)
+- Custom count (any positive integer)
+
+### Quote Mode
+
+Practice with real quotes from various sources. Quotes are categorized by length:
+
+- **Short** (0): Brief quotes and sentences
+- **Medium** (1): Moderate-length quotes
+- **Long** (2): Extended quotes and passages
+- **Thicc** (3): Very long quotes for endurance practice
+- **Favorites** (-3): Your saved favorite quotes
+- **Search** (-2): Search for specific quotes
+
+**Code reference:** Quote length schema in `packages/schemas/src/configs.ts:14-36`
+
+### Zen Mode
+
+Type freely without any time limit or word count. Perfect for:
+- Warming up before timed tests
+- Stress-free practice
+- Testing keyboard layouts
+- Free-form writing
+
+### Custom Mode
+
+Create your own custom text to practice with specific content. Useful for:
+- Programming language syntax practice
+- Memorizing specific passages
+- Practicing domain-specific vocabulary
+- Training for real-world typing scenarios
+
+## Difficulty Levels
+
+Monkeytype offers three difficulty levels that affect word selection and text generation:
+
+<Tabs>
+  <Tab title="Normal">
+    **Normal Difficulty**
+    
+    The default difficulty level using the most common words from the selected language. Ideal for:
+    - Beginners learning touch typing
+    - Casual practice
+    - Building speed and confidence
+    
+    Uses standard word frequency lists for natural typing flow.
+  </Tab>
+  
+  <Tab title="Expert">
+    **Expert Difficulty**
+    
+    Includes less common words and more challenging vocabulary. Features:
+    - Expanded word pool with uncommon words
+    - More varied vocabulary
+    - Increased cognitive load
+    - Better preparation for real-world typing
+    
+    Recommended for intermediate typists looking to improve.
+  </Tab>
+  
+  <Tab title="Master">
+    **Master Difficulty**
+    
+    The ultimate challenge with the most difficult words. Includes:
+    - Rare and complex words
+    - Longer words with difficult letter combinations
+    - Maximum vocabulary diversity
+    - True test of typing mastery
+    
+    For advanced typists seeking the hardest challenge.
+  </Tab>
+</Tabs>
+
+**Code reference:** Difficulty schema in `packages/schemas/src/shared.ts:6-7`
+
+```typescript
+export const DifficultySchema = z.enum(["normal", "expert", "master"]);
+```
+
+## Customization Options
+
+### Visual Customization
+
+#### Themes
+
+- **400+ Built-in Themes**: Carefully curated themes ranging from minimal to vibrant
+- **Light/Dark Mode**: Separate theme selection for light and dark modes
+- **Random Theme**: Automatically switch themes between tests
+- **Custom Themes**: Create your own with 10 customizable colors:
+  - Background color
+  - Main text color
+  - Caret color
+  - Sub text color
+  - Error color
+  - Error extra color
+  - Correct color
+  - Correct extra color
+  - Text color
+  - Secondary color
+
+#### Caret Styles
+
+Choose from multiple caret styles in `packages/schemas/src/configs.ts:39-49`:
+
+- `off`: No caret
+- `default`: Standard vertical line
+- `block`: Filled block
+- `outline`: Outlined block
+- `underline`: Underscore style
+- `carrot`: Fun carrot icon
+- `banana`: Fun banana icon
+- `monkey`: Fun monkey icon
+
+#### Smooth Caret
+
+Animate the caret movement between characters:
+
+- `off`: Instant movement
+- `slow`: Gentle animation
+- `medium`: Moderate speed
+- `fast`: Quick animation
+
+### Behavioral Settings
+
+#### Quick Restart
+
+Configure which key restarts the test (defined in `packages/schemas/src/configs.ts:11-12`):
+
+- `off`: Disabled
+- `esc`: Use Escape key
+- `tab`: Use Tab key
+- `enter`: Use Enter key
+
+#### Stop on Error
+
+Control behavior when making mistakes:
+
+- `off`: Continue typing with errors highlighted
+- `word`: Must correct word before proceeding to next
+- `letter`: Must correct each letter before continuing
+
+#### Confidence Mode
+
+Hide text you've already typed to increase difficulty:
+
+- `off`: Show all text
+- `on`: Hide previous words
+- `max`: Hide everything except current word
+
+### Sound Effects
+
+#### Click Sounds
+
+16 different typing sound effects to choose from, plus the ability to disable them entirely.
+
+#### Error Sounds
+
+4 different error alert sounds that play when you make a mistake.
+
+#### Volume Control
+
+Adjust sound volume from 0.0 to 1.0 with fine-grained control.
+
+### Additional Options
+
+- **Punctuation**: Toggle punctuation marks in test text
+- **Numbers**: Toggle numbers in test text
+- **Blind Mode**: Hide the test text for memory-based typing
+- **Focus Mode**: Hide header and footer while typing for distraction-free experience
+- **Font Selection**: Choose from numerous font options optimized for readability
+- **Font Size**: Adjust font size from small to large
+- **Line Width**: Set maximum line width (20-1000 pixels or 0 for full width)
+
+## Funbox Modes
+
+Funbox modes are special test modifiers that add unique challenges or variations to the standard typing test. There are over 40 funbox modes available.
+
+### Visual Effect Funboxes
+
+<CardGroup cols={2}>
+  <Card title="Mirror" icon="mirror">
+    Everything is mirrored horizontally. Type while looking in a mirror!
+    
+    **Properties**: CSS modifications, allows PB
+  </Card>
+  
+  <Card title="Upside Down" icon="rotate">
+    All text appears upside down. Challenge your spatial awareness.
+    
+    **Properties**: CSS modifications, allows PB
+  </Card>
+  
+  <Card title="Nausea" icon="dizzy">
+    Screen sways back and forth. Not recommended before lunch.
+    
+    **Properties**: CSS animations, allows PB, ignores reduced motion
+  </Card>
+  
+  <Card title="Round Round Baby" icon="circle">
+    The typing area spins continuously. Hold on tight!
+    
+    **Properties**: CSS animations, allows PB, ignores reduced motion
+  </Card>
+</CardGroup>
+
+### Challenge Funboxes
+
+<CardGroup cols={2}>
+  <Card title="Memory" icon="brain">
+    Words appear briefly then disappear. Type from memory.
+    
+    **Properties**: Changes word visibility, allows PB
+  </Card>
+  
+  <Card title="Read Ahead" icon="eye">
+    Must type words several positions ahead. Three difficulty levels: easy, normal, hard.
+    
+    **Properties**: Changes word visibility, allows PB
+  </Card>
+  
+  <Card title="Simon Says" icon="hand-point-up">
+    Type exactly what appears, including unusual formatting.
+    
+    **Properties**: Uses keyboard layout, allows PB
+  </Card>
+  
+  <Card title="TTS (Text-to-Speech)" icon="volume-high">
+    Words are spoken aloud instead of displayed. Listen carefully!
+    
+    **Properties**: Changes word visibility, speaks, allows PB
+  </Card>
+</CardGroup>
+
+### Special Character Funboxes
+
+<CardGroup cols={2}>
+  <Card title="58008 (Numbers)" icon="calculator">
+    Type only numbers. Perfect for accountants and data entry practice.
+    
+    **Properties**: Ignores language/layout, no PB
+  </Card>
+  
+  <Card title="Arrows" icon="arrows-up-down-left-right">
+    Type using arrow keys. Great for pad/controller practice.
+    
+    **Properties**: Ignores language/layout, symmetric chars, no PB
+  </Card>
+  
+  <Card title="ASCII" icon="code">
+    Type ASCII special characters and symbols.
+    
+    **Properties**: Ignores language/layout, allows PB
+  </Card>
+  
+  <Card title="Binary" icon="binary">
+    Type in binary (0s and 1s).
+    
+    **Properties**: Ignores language, symmetric chars, allows PB
+  </Card>
+  
+  <Card title="Hexadecimal" icon="hashtag">
+    Type hexadecimal values (0-9, A-F).
+    
+    **Properties**: Ignores language/layout, allows PB
+  </Card>
+  
+  <Card title="IPv4 / IPv6" icon="network-wired">
+    Practice typing IP addresses in v4 or v6 format.
+    
+    **Properties**: Ignores language, allows PB
+  </Card>
+</CardGroup>
+
+### Text Transformation Funboxes
+
+- **rAnDoMcAsE**: Randomly capitalize letters
+- **sPoNgEcAsE**: Alternating case letters
+- **ALL_CAPS**: Everything in uppercase
+- **capitals**: Words start with capital letters
+- **backwards**: Type words in reverse
+- **ddoouubblleedd**: Every letter appears twice
+- **rot13**: Caesar cipher rotation
+- **morse**: Morse code practice
+
+### Word Generation Funboxes
+
+- **gibberish**: Random letter combinations
+- **pseudolang**: Made-up words following language patterns
+- **wikipedia**: Random Wikipedia article excerpts
+- **poetry**: Poem excerpts and verses
+- **weakspot**: Focus on your worst-performing key combinations
+- **zipf**: Words ordered by frequency (Zipf's law)
+
+### Layout Funboxes
+
+- **layoutfluid**: Automatically switch between multiple keyboard layouts during the test
+- **layout_mirror**: Mirror your keyboard layout
+- **polyglot**: Type in multiple languages simultaneously
+
+### Modifier Funboxes
+
+- **nospace**: Spaces are replaced with visible characters
+- **plus_one/two/three**: Shift each letter forward in the alphabet
+- **underscore_spaces**: Replace spaces with underscores
+- **instant_messaging**: Add common internet abbreviations and slang
+
+**Code reference:** Full funbox list in `packages/schemas/src/configs.ts:275-324` and `packages/funbox/src/list.ts`
+
+<Warning>
+Some funbox modes disable personal best tracking because they significantly alter the typing experience. These include modes that change the character set (like 58008, arrows) or make the test non-comparable to standard typing.
+</Warning>
+
+## Statistics and Analytics
+
+### Real-time Metrics
+
+While typing, Monkeytype tracks:
+
+- **WPM (Words Per Minute)**: Live calculation of typing speed
+- **Accuracy**: Percentage of correctly typed characters
+- **Raw WPM**: Speed including all errors
+- **Timer/Progress**: Countdown or word count progress
+
+### Post-Test Results
+
+After completing a test, view detailed analytics:
+
+- **Final WPM**: Your typing speed
+- **Accuracy**: Overall accuracy percentage
+- **Raw WPM**: Speed with errors included
+- **Consistency**: How steady your typing speed was (0-100%)
+- **Character Stats**:
+  - Correct characters
+  - Incorrect characters
+  - Extra characters
+  - Missed characters
+- **WPM Graph**: Speed over time visualization
+- **Character-by-Character Breakdown**: See exactly where errors occurred
+- **Key Press Heatmap**: Visualize which keys you pressed
+
+### Personal Bests
+
+Personal bests are automatically tracked for each unique combination of:
+
+- Mode (time/words/quote/custom/zen)
+- Duration or word count
+- Language
+- Difficulty level
+- Punctuation enabled/disabled
+- Numbers enabled/disabled
+
+**Code reference:** Personal best schema in `packages/schemas/src/shared.ts:10-22`
+
+```typescript
+export const PersonalBestSchema = z.object({
+  acc: z.number().nonnegative().max(100),
+  consistency: z.number().nonnegative().max(100),
+  difficulty: DifficultySchema,
+  lazyMode: z.boolean().optional(),
+  language: LanguageSchema,
+  punctuation: z.boolean().optional(),
+  numbers: z.boolean().optional(),
+  raw: z.number().nonnegative(),
+  wpm: z.number().nonnegative(),
+  timestamp: z.number().nonnegative(),
+});
+```
+
+## Account Features
+
+Creating an account unlocks powerful features:
+
+### Test History
+
+- Unlimited test result storage (premium users get higher limits)
+- Filter and search through past results
+- Export test data
+- Delete individual or bulk results
+
+### Profile System
+
+- Customizable username and bio
+- Profile badges and flags
+- Public or private profile options
+- Activity calendar showing typing frequency
+- Detailed statistics and graphs
+
+### Leaderboards
+
+#### Daily Leaderboards
+
+- New leaderboards every day
+- Multiple mode and language categories
+- XP rewards based on rank
+- Top results announced on Discord
+
+**Configuration** in `packages/schemas/src/configuration.ts:104-112`:
+
+```typescript
+dailyLeaderboards: z.object({
+  enabled: z.boolean(),
+  leaderboardExpirationTimeInDays: z.number().nonnegative(),
+  maxResults: z.number().int().nonnegative(),
+  validModeRules: z.array(ValidModeRuleSchema),
+  scheduleRewardsModeRules: z.array(ValidModeRuleSchema),
+  topResultsToAnnounce: z.number().int().positive(),
+  xpRewardBrackets: z.array(RewardBracketSchema),
+}),
+```
+
+#### Weekly XP Leaderboards
+
+- Compete for highest XP earned each week
+- XP brackets with rewards
+- Resets weekly
+
+#### All-Time Leaderboards
+
+- Permanent leaderboards for each mode, language, and difficulty combination
+- Minimum typing time requirements to prevent spam
+- Updated in real-time
+
+### XP System
+
+Earn experience points (XP) by:
+
+- Completing typing tests (scaled by time and performance)
+- Daily login bonuses
+- Streak bonuses (consecutive days of typing)
+- Funbox multipliers for challenging modes
+
+**XP configuration** in `packages/schemas/src/configuration.ts:67-78`:
+
+```typescript
+xp: z.object({
+  enabled: z.boolean(),
+  funboxBonus: z.number(),
+  gainMultiplier: z.number(),
+  maxDailyBonus: z.number(),
+  minDailyBonus: z.number(),
+  streak: z.object({
+    enabled: z.boolean(),
+    maxStreakDays: z.number().nonnegative(),
+    maxStreakMultiplier: z.number(),
+  }),
+}),
+```
+
+### Premium Features
+
+Premium accounts (via Patreon) receive:
+
+- Increased result storage limits
+- Priority support
+- Early access to new features
+- Special profile badges
+- Ad-free experience
+
+### Discord Integration
+
+Connect your Discord account to:
+
+- Auto-assign role based on typing performance
+- Participate in community challenges
+- Receive leaderboard announcements
+- Show typing stats on your profile
+
+## API Access
+
+Monkeytype provides a comprehensive REST API for building integrations:
+
+### Authentication
+
+Generate API keys from your account settings:
+
+- Create multiple API keys
+- Set per-key permissions
+- Rate limiting per key
+- Regenerate or delete keys anytime
+
+**Configuration** in `packages/schemas/src/configuration.ts:90-96`:
+
+```typescript
+apeKeys: z.object({
+  endpointsEnabled: z.boolean(),
+  acceptKeys: z.boolean(),
+  maxKeysPerUser: z.number().int().nonnegative(),
+  apeKeyBytes: z.number().int().nonnegative(),
+  apeKeySaltRounds: z.number().int().nonnegative(),
+}),
+```
+
+### Available Endpoints
+
+The API provides access to:
+
+- User profile data
+- Test results and history
+- Personal bests
+- Leaderboards
+- Configuration management
+- Quote database
+- Public statistics
+
+For complete API documentation, see the [API Reference](/api/overview) section.
+
+## Additional Features
+
+### Presets
+
+Save custom configuration presets for quick switching:
+
+- Name your preset
+- Save any combination of settings
+- Quickly switch between presets
+- Share presets with others via URL
+
+### Tags
+
+Organize test results with custom tags:
+
+- Create unlimited tags
+- Apply multiple tags per result
+- Filter results by tag
+- Track progress within specific categories
+
+### Challenges
+
+Participate in or create typing challenges:
+
+- Time-limited challenges
+- Specific configuration requirements
+- Community challenges
+- Leaderboard for each challenge
+
+### Quotes
+
+- Submit new quotes for review
+- Report inappropriate quotes
+- Favorite quotes for quick access
+- Search quotes by content or author
+
+**Quote system configuration** in `packages/schemas/src/configuration.ts:28-36`:
+
+```typescript
+quotes: z.object({
+  reporting: z.object({
+    enabled: z.boolean(),
+    maxReports: z.number().int().nonnegative(),
+    contentReportLimit: z.number().int().nonnegative(),
+  }),
+  submissionsEnabled: z.boolean(),
+  maxFavorites: z.number().int().nonnegative(),
+}),
+```
+
+<Tip>
+Explore the settings menu (Ctrl + Shift + C) to discover even more customization options. Monkeytype has hundreds of configuration possibilities!
+</Tip>

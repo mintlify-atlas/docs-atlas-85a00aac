@@ -1,0 +1,320 @@
+---
+title: Basic Contributions
+description: Add languages, quotes, and themes to Monkeytype without setting up a local development environment
+---
+
+This guide covers how to make basic contributions to Monkeytype purely through GitHub's web interface. You won't need to set up a local development environment - just a browser and a GitHub account.
+
+<Note>
+  Use this guide for:
+  - Adding or updating languages
+  - Contributing quotes
+  - Creating themes
+  - Fixing translations
+  
+  For code changes that affect functionality, see [Advanced Contributions](/contributing/advanced-contributions).
+</Note>
+
+## Prerequisites
+
+All you need is:
+- A browser that can access GitHub
+- A GitHub account ([create one](https://github.com/signup) if needed)
+
+<Tip>
+  Watch [this YouTube tutorial](https://www.youtube.com/watch?v=nT8KGYVurIU) for a visual walkthrough of the basic contribution process.
+</Tip>
+
+## Forking Monkeytype
+
+<Steps>
+  <Step title="Create Your Fork">
+    Click [here to fork Monkeytype](https://github.com/monkeytypegame/monkeytype/fork) or navigate to the repository and click the **Fork** button in the top-right corner.
+
+    This creates your own copy of the repository under your GitHub account.
+  </Step>
+
+  <Step title="Navigate to Your Fork">
+    Go to your GitHub profile and find the `monkeytype` repository under your repositories.
+  </Step>
+</Steps>
+
+## Making Changes
+
+There are two ways to edit files in your fork:
+
+### Option 1: VS Code Web Editor (Recommended)
+
+The VS Code web editor makes it easier to edit multiple files and work with complex changes.
+
+<Steps>
+  <Step title="Open Web Editor">
+    In your fork, go to the `Code` tab and press the <kbd>.</kbd> (period/dot) key. This opens an online VS Code instance in your browser.
+  </Step>
+
+  <Step title="Make Your Changes">
+    Edit the files you need to change using the file explorer on the left.
+  </Step>
+
+  <Step title="Stage and Commit">
+    1. Open the Source Control tab with <kbd>Ctrl/Cmd + Shift + G</kbd>
+    2. Click the `+` next to changed files to stage them
+    3. Type a brief commit message describing your changes
+    4. Press <kbd>Ctrl/Cmd + Enter</kbd> to commit
+  </Step>
+</Steps>
+
+### Option 2: GitHub Web UI
+
+For simple, single-file edits, you can use GitHub's built-in editor.
+
+<Steps>
+  <Step title="Navigate to File">
+    Browse to the file you want to edit in your forked repository.
+  </Step>
+
+  <Step title="Click Edit">
+    Click the pencil icon on the right side of the file view.
+
+    <Note>
+      Very large files may not have an edit option. In these cases, use the VS Code web editor or set up a local development environment.
+    </Note>
+  </Step>
+
+  <Step title="Make Changes">
+    Edit the file content as needed.
+  </Step>
+
+  <Step title="Commit Changes">
+    1. Scroll to the bottom of the page
+    2. Add a descriptive commit title
+    3. (Optional) Add a detailed description
+    4. Select "Commit directly to your current branch"
+    5. Click **Commit changes**
+  </Step>
+</Steps>
+
+## Adding Languages
+
+<Steps>
+  <Step title="Create the Language File">
+    Navigate to `frontend/static/languages/` in your fork.
+
+    Create a new JSON file named according to the word count:
+    - Less than 1,000 words: `language_name.json`
+    - 1,000+ words: `language_name_1k.json`
+    - 10,000+ words: `language_name_10k.json`
+
+    Minimum of 200 words required.
+  </Step>
+
+  <Step title="Add Language Data">
+    Use this structure:
+
+    ```json
+    {
+      "name": "Language Name",
+      "rightToLeft": false,
+      "ligatures": false,
+      "orderedByFrequency": true,
+      "bcp47": "en-US",
+      "words": [
+        "word1",
+        "word2",
+        "word3"
+      ]
+    }
+    ```
+
+    - `rightToLeft`: Set to `true` for RTL languages (Arabic, Hebrew, etc.)
+    - `ligatures`: Set to `true` if letters join together (Arabic, Malayalam, etc.)
+    - `orderedByFrequency`: Set to `true` if words are sorted by frequency
+    - `bcp47`: The [IETF language tag](https://en.wikipedia.org/wiki/IETF_language_tag)
+  </Step>
+
+  <Step title="Update the Language Schema">
+    Go to `packages/schemas/src/languages.ts` and add your language name(s) to the end of the `LanguageSchema` enum:
+
+    ```typescript
+    export const LanguageSchema = z.enum([
+      "english",
+      "english_1k",
+      // ... existing languages
+      "your_language",
+      "your_language_1k",
+    ]);
+    ```
+  </Step>
+
+  <Step title="Add to Language Groups">
+    Go to `frontend/src/ts/constants/language.ts` and add your language to the `LanguageGroups` map:
+
+    ```typescript
+    export const LanguageGroups: Record<string, Language[]> = {
+      // ... existing groups
+      your_language: [
+        "your_language",
+        "your_language_1k",
+      ]
+    };
+    ```
+  </Step>
+</Steps>
+
+## Adding Quotes
+
+<Steps>
+  <Step title="Navigate to Quotes File">
+    Go to `frontend/static/quotes/[language].json` for your target language.
+
+    If the file doesn't exist, create it.
+  </Step>
+
+  <Step title="Add Your Quote">
+    Add this structure at the end of the quotes array:
+
+    ```json
+    {
+      "text": "Your quote text here",
+      "source": "Author or Source",
+      "id": 123,
+      "length": 45
+    }
+    ```
+
+    - `id`: Increment from the last quote's ID
+    - `length`: Character count of the quote text
+    - Minimum quote length: 60 characters
+  </Step>
+
+  <Step title="Verify Your Quote">
+    Check that:
+    - The quote isn't a duplicate
+    - The `length` value is accurate
+    - The `id` is correctly incremented
+    - No trailing commas in the JSON
+  </Step>
+</Steps>
+
+<Warning>
+  For quotes in non-English languages, include translations in your pull request description to help with verification.
+</Warning>
+
+## Creating Themes
+
+<Steps>
+  <Step title="Choose a Theme Name">
+    Pick a name that is:
+    - All lowercase
+    - Uses underscores instead of spaces
+    - Example: `my_awesome_theme`
+  </Step>
+
+  <Step title="Add to Theme Schema">
+    Go to `packages/schemas/src/themes.ts` and add your theme name to the end of `ThemeNameSchema`:
+
+    ```typescript
+    export const ThemeNameSchema = z.enum([
+      "8008",
+      "80s_after_dark",
+      // ... existing themes
+      "your_theme_name",
+    ]);
+    ```
+  </Step>
+
+  <Step title="Define Theme Colors">
+    Go to `frontend/src/ts/constants/themes.ts` and add your theme configuration at the end:
+
+    ```typescript
+    export const themes: Record<ThemeName, Theme> = {
+      // ... existing themes
+      your_theme_name: {
+        bg: "#323437",
+        caret: "#e2b714",
+        main: "#e2b714",
+        sub: "#646669",
+        subAlt: "#2c2e31",
+        text: "#d1d0c5",
+        error: "#ca4754",
+        errorExtra: "#7e2a33",
+        colorfulError: "#ca4754",
+        colorfulErrorExtra: "#7e2a33",
+      },
+    };
+    ```
+
+    Color properties:
+    - `bg`: Background color
+    - `caret`: Typing cursor color
+    - `main`: Primary accent color
+    - `sub`: Secondary text color
+    - `subAlt`: Alternative background color
+    - `text`: Main text color
+    - `error`: Error text color
+    - `errorExtra`: Error background color
+    - `colorfulError`: Colorful mode error text
+    - `colorfulErrorExtra`: Colorful mode error background
+  </Step>
+
+  <Step title="Add Custom CSS (Optional)">
+    If your theme needs custom styling:
+
+    1. Create `frontend/static/themes/your_theme_name.css`
+    2. Add `hasCss: true` to your theme configuration:
+
+    ```typescript
+    your_theme_name: {
+      // ... color properties
+      hasCss: true,
+    },
+    ```
+  </Step>
+</Steps>
+
+## Creating a Pull Request
+
+<Steps>
+  <Step title="Update Your Fork">
+    Go to your fork's main page and click the "Sync fork" or "Update branch" button to sync with the latest changes from the main repository.
+  </Step>
+
+  <Step title="Open Pull Request">
+    Click the **Contribute** button, then **Open pull request**.
+  </Step>
+
+  <Step title="Fill in Details">
+    - Verify the base repository is `monkeytypegame/monkeytype` and base branch is `master`
+    - Add a descriptive title following the [naming guidelines](/contributing/guidelines#pull-request-naming)
+    - Describe your changes in detail
+    - For themes, include screenshots
+    - For non-English quotes, include translations
+  </Step>
+
+  <Step title="Submit">
+    Click **Create pull request** to submit your contribution.
+  </Step>
+</Steps>
+
+## After Submission
+
+Once your pull request is created:
+
+1. Wait for maintainer review
+2. Respond to any feedback or change requests
+3. Make additional commits to your branch if needed
+4. Once approved, a maintainer will merge your contribution
+
+## Guidelines
+
+Make sure your contribution follows the appropriate guidelines:
+- [Theme Guidelines](/contributing/guidelines#theme-guidelines)
+- [Language Guidelines](/contributing/guidelines#language-guidelines)
+- [Quote Guidelines](/contributing/guidelines#quote-guidelines)
+
+## Getting Help
+
+If you need assistance:
+- Join the `#development` channel on [Discord](https://discord.gg/monkeytype)
+- Ask on [GitHub Discussions](https://github.com/monkeytypegame/monkeytype/discussions)
+- Email the maintainers at jack@monkeytype.com

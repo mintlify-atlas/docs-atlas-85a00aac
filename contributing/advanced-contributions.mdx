@@ -1,0 +1,393 @@
+---
+title: Advanced Contributions
+description: Make code changes and functional improvements to Monkeytype
+---
+
+This guide is for contributors who want to make code changes that affect functionality, require testing, or need screenshots. You'll need to set up a full local development environment.
+
+<Note>
+  For simple contributions like adding languages, quotes, or themes, check out the [Basic Contributions](/contributing/basic-contributions) guide.
+</Note>
+
+## Before You Start
+
+Make sure you've completed the [Getting Started](/contributing/getting-started) guide to set up your development environment.
+
+## Technology Stack
+
+Monkeytype is built with:
+
+- **Frontend**: TypeScript, HTML, CSS
+- **Backend**: Node.js
+- **Database**: MongoDB (user data)
+- **Cache**: Redis (leaderboards, jobs, OAuth state)
+- **Authentication**: Firebase
+- **Code Quality**: Oxc (Oxfmt and Oxlint)
+
+## Development Workflow
+
+### 1. Fork and Clone
+
+<Steps>
+  <Step title="Fork the Repository">
+    Click the Fork button on the [Monkeytype repository](https://github.com/monkeytypegame/monkeytype).
+  </Step>
+
+  <Step title="Clone Your Fork">
+    ```bash
+    git clone https://github.com/YOUR_USERNAME/monkeytype.git
+    cd monkeytype
+    ```
+  </Step>
+
+  <Step title="Create a Feature Branch">
+    ```bash
+    git checkout -b feature/your-feature-name
+    ```
+  </Step>
+</Steps>
+
+### 2. Make Your Changes
+
+<Steps>
+  <Step title="Start Development Server">
+    ```bash
+    # Both frontend and backend
+    npm run dev
+
+    # Frontend only
+    npm run dev-fe
+
+    # Backend only
+    npm run dev-be
+    ```
+
+    The development server will automatically rebuild when you save changes.
+  </Step>
+
+  <Step title="Write Your Code">
+    Make your changes in the `src/` directory. The project structure is organized as:
+    
+    - `frontend/` - Frontend application code
+    - `backend/` - Backend API and server code
+    - `packages/` - Shared packages and utilities
+  </Step>
+
+  <Step title="Test Your Changes">
+    View your changes at:
+    - Frontend: [http://localhost:3000](http://localhost:3000)
+    - Backend: [http://localhost:5005](http://localhost:5005)
+  </Step>
+</Steps>
+
+<Note>
+  Rebuilding after changes may take a moment depending on your machine's performance. Be patient while the development server recompiles.
+</Note>
+
+### 3. Code Quality
+
+Monkeytype enforces code quality through automated tools.
+
+#### Linting
+
+```bash
+# Lint all code
+npm run lint
+
+# Lint with auto-fix
+npm run lint-fix
+
+# Fast lint (without type checking)
+npm run lint-fast
+
+# Lint specific areas
+npm run lint-fe      # Frontend only
+npm run lint-be      # Backend only
+npm run lint-pkg     # Packages only
+```
+
+#### Formatting
+
+```bash
+# Check formatting
+npm run format-check
+
+# Fix formatting
+npm run format-fix
+```
+
+#### Pre-commit Hooks
+
+Oxc automatically runs on every commit to format and lint your code. If there are issues, the commit will be blocked until they're resolved.
+
+### 4. Testing
+
+Run tests to ensure your changes don't break existing functionality.
+
+```bash
+# Run all tests
+npm run test
+
+# Test specific areas
+npm run test-fe      # Frontend tests
+npm run test-be      # Backend tests (includes integration tests)
+npm run test-pkg     # Package tests
+```
+
+### 5. Building
+
+Before submitting, verify your code builds successfully.
+
+```bash
+# Build all
+npm run build
+
+# Build specific areas
+npm run build-fe     # Frontend only
+npm run build-be     # Backend only
+npm run build-pkg    # Packages only
+```
+
+### 6. Asset Validation
+
+If you've modified languages, quotes, or themes, validate the JSON assets.
+
+```bash
+# Check all assets
+npm run check-assets
+
+# Check specific asset types
+npm run check-assets-quotes
+npm run check-assets-languages
+npm run check-assets-others
+```
+
+## Working with Docker
+
+Docker provides a consistent development environment across different operating systems.
+
+### Database Only
+
+```bash
+cd backend
+npm run docker-db-only
+```
+
+This starts MongoDB and Redis in containers.
+
+### Full Backend
+
+```bash
+cd backend
+npm run docker
+```
+
+### Full Frontend
+
+```bash
+cd frontend
+npm run docker
+```
+
+## Firebase Development
+
+If you're working on authentication or user account features:
+
+### Initial Setup
+
+1. Create a Firebase project in the [Firebase Console](https://console.firebase.google.com)
+2. Enable Email/Password and Google authentication
+3. Configure `frontend/src/ts/constants/firebase-config.ts` with your project credentials
+
+### Backend Firebase Setup
+
+For backend development:
+
+1. Go to Project Settings > Service Accounts in Firebase Console
+2. Click "Generate New Private Key"
+3. Save as `backend/src/credentials/serviceAccountKey.json`
+
+<Warning>
+  Never commit `serviceAccountKey.json` or any Firebase credentials to the repository.
+</Warning>
+
+## Database Management
+
+### MongoDB
+
+Connect to your local MongoDB instance:
+
+```bash
+mongodb://localhost:27017
+```
+
+Use [MongoDB Compass](https://www.mongodb.com/try/download/compass) for a visual interface.
+
+### Redis
+
+Redis runs on the default port `6379` and stores:
+- Daily leaderboards
+- Background job queues (via BullMQ)
+- OAuth state parameters
+
+## Common Development Tasks
+
+### Adding a New Feature
+
+<Steps>
+  <Step title="Plan Your Feature">
+    - Discuss the feature in the `#development` Discord channel
+    - Check if an issue exists or create one
+    - Get feedback from maintainers
+  </Step>
+
+  <Step title="Implement">
+    - Create a feature branch
+    - Write code following existing patterns
+    - Add tests for new functionality
+    - Update documentation if needed
+  </Step>
+
+  <Step title="Test Thoroughly">
+    - Test manually in your browser
+    - Run automated tests
+    - Test edge cases
+    - Verify different configurations
+  </Step>
+
+  <Step title="Document">
+    - Add code comments for complex logic
+    - Update user-facing documentation
+    - Take screenshots if UI changed
+  </Step>
+</Steps>
+
+### Fixing a Bug
+
+<Steps>
+  <Step title="Reproduce the Bug">
+    - Verify the bug exists in the latest code
+    - Document steps to reproduce
+    - Identify the root cause
+  </Step>
+
+  <Step title="Fix">
+    - Make minimal changes to fix the issue
+    - Add tests to prevent regression
+    - Verify the fix works
+  </Step>
+
+  <Step title="Test">
+    - Confirm the bug is resolved
+    - Check for side effects
+    - Run the full test suite
+  </Step>
+</Steps>
+
+## TypeScript Tips
+
+Monkeytype is written in TypeScript. Keep these tips in mind:
+
+- Use strict type checking
+- Avoid `any` types when possible
+- Define interfaces for complex objects
+- Use enums for fixed sets of values
+- Leverage type inference
+
+### Type Checking
+
+```bash
+# Run TypeScript compiler check
+npm run ts-check
+```
+
+## Submitting Your Changes
+
+Once your changes are ready:
+
+<Steps>
+  <Step title="Commit Your Changes">
+    ```bash
+    git add .
+    git commit -m "feat: add new feature"
+    ```
+
+    Follow the [commit message guidelines](/contributing/guidelines#pull-request-naming).
+  </Step>
+
+  <Step title="Push to Your Fork">
+    ```bash
+    git push origin feature/your-feature-name
+    ```
+  </Step>
+
+  <Step title="Create Pull Request">
+    1. Go to your fork on GitHub
+    2. Click "Compare & pull request"
+    3. Fill in the PR template
+    4. Add screenshots for UI changes
+    5. Reference related issues
+    6. Submit the pull request
+  </Step>
+</Steps>
+
+## Pull Request Guidelines
+
+- Follow the [PR naming conventions](/contributing/guidelines#pull-request-naming)
+- Provide a clear description of changes
+- Include screenshots for visual changes
+- Link to related issues
+- Ensure all checks pass
+- Respond to review feedback promptly
+
+## Code Review Process
+
+1. Automated checks run on your PR (linting, tests, build)
+2. Maintainers review your code
+3. You may need to make changes based on feedback
+4. Once approved, a maintainer will merge your PR
+
+<Tip>
+  Be patient and responsive during review. Maintainers may take time to review thoroughly.
+</Tip>
+
+## Troubleshooting
+
+### Build Errors
+
+- Clear node_modules and reinstall: `rm -rf node_modules && pnpm i`
+- Check Node.js version: `node --version` (should be 24.11.0)
+- Verify pnpm version: `pnpm --version` (should be 10.28.1)
+
+### Development Server Issues
+
+- Kill any processes using port 3000 or 5005
+- Clear browser cache and cookies
+- Try running with `sudo` on UNIX systems if you get spawn errors
+
+### Database Connection Issues
+
+- Verify MongoDB and Redis are running
+- Check connection strings in `.env` files
+- Restart database services
+
+### Firebase Errors
+
+- Verify Firebase configuration in `firebase-config.ts`
+- Check authentication methods are enabled in Firebase Console
+- Ensure service account key is in the correct location
+
+## Getting Help
+
+If you're stuck:
+
+- Join the `#development` channel on [Discord](https://discord.gg/monkeytype)
+- Search [GitHub Issues](https://github.com/monkeytypegame/monkeytype/issues)
+- Ask on [GitHub Discussions](https://github.com/monkeytypegame/monkeytype/discussions)
+- Contact maintainers: [Miodec on GitHub](https://github.com/Miodec)
+
+## Next Steps
+
+- Review [Contribution Guidelines](/contributing/guidelines)
+- Check out [good first issues](https://github.com/monkeytypegame/monkeytype/labels/good%20first%20issue)
+- Join the contributor community on Discord

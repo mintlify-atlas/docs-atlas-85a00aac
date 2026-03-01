@@ -1,0 +1,275 @@
+---
+title: System Architecture Overview
+description: Understanding Monkeytype's monorepo structure, tech stack, and system design
+---
+
+Monkeytype is built as a modern monorepo application with a clear separation between frontend, backend, and shared packages. The architecture prioritizes performance, type safety, and maintainability.
+
+## Monorepo Structure
+
+The project uses a **pnpm workspace** managed by **Turborepo** for efficient builds and caching:
+
+```
+monkeytype/
+├── frontend/          # SolidJS web application
+├── backend/           # Express.js API server
+└── packages/          # Shared libraries
+    ├── contracts      # API contracts (ts-rest)
+    ├── schemas        # Zod schemas and types
+    ├── funbox         # Test mode definitions
+    ├── util           # Shared utilities
+    └── typescript-config  # Shared TS config
+```
+
+### Build System
+
+Monkeytype uses **Turborepo** to orchestrate builds across the monorepo:
+
+```json title="turbo.json"
+{
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "build/**"]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "persistent": true
+    }
+  }
+}
+```
+
+**Key features:**
+- **Dependency-aware builds**: Packages build in correct order (`^build` dependency)
+- **Incremental builds**: Only rebuilds changed packages
+- **Parallel execution**: Independent tasks run concurrently
+- **Smart caching**: Turborepo caches build outputs
+
+### Package Scripts
+
+The root `package.json` provides commands for the entire monorepo:
+
+```bash
+# Development
+pnpm dev           # Start all services in dev mode
+pnpm dev-fe        # Frontend only
+pnpm dev-be        # Backend only
+
+# Building
+pnpm build         # Build all packages
+pnpm build-fe      # Build frontend
+pnpm build-be      # Build backend
+
+# Testing
+pnpm test          # Run all tests
+pnpm lint          # Lint all packages
+```
+
+## Technology Stack
+
+### Frontend Stack
+
+| Technology | Purpose |
+|------------|----------|
+| **SolidJS** | Reactive UI framework (fine-grained reactivity) |
+| **Vite** | Build tool and dev server |
+| **TailwindCSS** | Utility-first styling |
+| **TanStack Query** | Server state management |
+| **Firebase** | Authentication (client SDK) |
+| **TypeScript** | Type safety (v6.0 beta) |
+
+**Frontend source location**: `/frontend/src/ts/`
+
+### Backend Stack
+
+| Technology | Purpose |
+|------------|----------|
+| **Express.js** | HTTP server framework |
+| **ts-rest** | Type-safe API contracts |
+| **MongoDB** | Primary database (user data, results) |
+| **Redis** | Caching and leaderboards |
+| **Firebase Admin** | Authentication verification |
+| **BullMQ** | Background job queue |
+| **TypeScript** | Type safety (v6.0 beta) |
+
+**Backend source location**: `/backend/src/`
+
+### Shared Packages
+
+**@monkeytype/contracts**
+- Type-safe API contracts using `@ts-rest/core`
+- Shared between frontend and backend
+- Ensures API type safety at compile time
+
+**@monkeytype/schemas**
+- Zod schemas for runtime validation
+- TypeScript types derived from schemas
+- Used for users, results, configs, etc.
+
+**@monkeytype/util**
+- Shared utility functions
+- Date/time helpers, string manipulation
+
+**@monkeytype/funbox**
+- Test mode and funbox definitions
+- Shared game logic
+
+## System Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                      Browser                            │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │         SolidJS Frontend (Port 3000)             │  │
+│  │  - Components (SolidJS)                          │  │
+│  │  - State Management (TanStack Query)             │  │
+│  │  - Firebase Auth (Client SDK)                    │  │
+│  └────────────────┬─────────────────────────────────┘  │
+└────────────────────┼────────────────────────────────────┘
+                     │ HTTPS
+                     │ ts-rest typed API calls
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│         Express Backend (Port 5005)                     │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │  API Routes (ts-rest)                            │  │
+│  │  - Authentication Middleware                     │  │
+│  │  - Rate Limiting                                 │  │
+│  │  - Request Validation                            │  │
+│  └────────┬─────────────────────────┬────────────────┘  │
+│           │                         │                   │
+│           ▼                         ▼                   │
+│  ┌─────────────────┐      ┌──────────────────┐         │
+│  │  Controllers    │      │  Middleware      │         │
+│  │  - User         │      │  - Auth          │         │
+│  │  - Result       │      │  - Rate Limit    │         │
+│  │  - Leaderboard  │      │  - Context       │         │
+│  └────────┬────────┘      └──────────────────┘         │
+│           │                                             │
+│           ▼                                             │
+│  ┌────────────────────────────────────────────┐        │
+│  │  Data Access Layer (DAL)                   │        │
+│  │  - user.ts                                 │        │
+│  │  - result.ts                               │        │
+│  │  - leaderboards.ts                         │        │
+│  └────┬──────────────────────┬─────────────────┘       │
+└───────┼──────────────────────┼──────────────────────────┘
+        │                      │
+        ▼                      ▼
+ ┌─────────────┐        ┌────────────┐
+ │   MongoDB   │        │   Redis    │
+ │  (Primary   │        │ (Cache +   │
+ │   Database) │        │ Leaderboards│
+ └─────────────┘        └────────────┘
+        │
+        ├─ users (collection)
+        ├─ results (collection)
+        ├─ configs (collection)
+        └─ leaderboards (collection)
+
+┌──────────────────────────────────────┐
+│      Firebase Authentication         │
+│  - Token verification                │
+│  - User management                   │
+└──────────────────────────────────────┘
+```
+
+## Request Flow
+
+A typical request flows through the system as follows:
+
+1. **Frontend**: User action triggers API call via `@ts-rest/core` client
+2. **Type Safety**: Request matches contract definition from `@monkeytype/contracts`
+3. **Backend**: Express receives request at ts-rest endpoint
+4. **Middleware Pipeline**:
+   - Context middleware attaches request metadata
+   - Authentication verifies Firebase token or ApeKey
+   - Rate limiter checks request limits
+   - Validation ensures request schema matches contract
+5. **Controller**: Business logic processes the request
+6. **DAL**: Data access layer queries MongoDB or Redis
+7. **Response**: Type-safe response returned via contract
+
+## Authentication Flow
+
+```typescript
+// Frontend: Firebase Auth
+import { signInWithPopup } from "firebase/auth";
+const user = await signInWithPopup(auth, provider);
+const token = await user.getIdToken();
+
+// API Request with token
+const response = await apiClient.users.getProfile({
+  headers: { Authorization: `Bearer ${token}` }
+});
+
+// Backend: Token verification (backend/src/middlewares/auth.ts:1)
+export function authenticateTsRestRequest() {
+  return async (req, res, next) => {
+    const { authorization } = req.headers;
+    const token = await verifyIdToken(authorization);
+    req.ctx.decodedToken = token;
+    next();
+  };
+}
+```
+
+## Key Design Principles
+
+### Type Safety
+- **End-to-end types**: Types flow from schemas → contracts → frontend
+- **Runtime validation**: Zod schemas validate at runtime
+- **Compile-time checks**: TypeScript catches errors before deployment
+
+### Performance
+- **Redis caching**: Frequent queries cached (leaderboards, configs)
+- **Lazy loading**: Frontend code-splits by route
+- **Optimistic updates**: UI updates before server confirmation
+- **PWA support**: Service worker for offline capability
+
+### Scalability
+- **Horizontal scaling**: Stateless backend servers
+- **Database indexing**: MongoDB indices on common queries
+- **Queue system**: BullMQ handles async jobs (emails, reports)
+- **CDN delivery**: Static assets served from CDN
+
+## Development Workflow
+
+### Local Development
+
+```bash
+# 1. Install dependencies
+pnpm install
+
+# 2. Start services
+pnpm dev        # Runs frontend + backend
+
+# 3. Services start:
+# - Frontend: http://localhost:3000 (Vite dev server)
+# - Backend: http://localhost:5005 (Express with tsx watch)
+
+# 4. Hot reload:
+# - Frontend: Vite HMR for instant updates
+# - Backend: tsx watch restarts on file changes
+# - Packages: Turborepo rebuilds on changes
+```
+
+### Build Pipeline
+
+```bash
+# Production build
+pnpm build
+
+# What happens:
+# 1. Packages build first (schemas, contracts, util)
+# 2. Backend compiles TypeScript → dist/
+# 3. Frontend bundles with Vite → dist/
+# 4. Assets optimized (minification, tree-shaking)
+```
+
+## Next Steps
+
+- [Frontend Architecture](/architecture/frontend) - Deep dive into SolidJS structure
+- [Backend Architecture](/architecture/backend) - API design and middleware
+- [Database Architecture](/architecture/database) - MongoDB and Redis usage

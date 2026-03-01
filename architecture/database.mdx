@@ -1,0 +1,836 @@
+---
+title: Data Architecture
+description: MongoDB collections, schemas, Redis caching, and data models
+---
+
+Monkeytype uses a combination of **MongoDB** for persistent storage and **Redis** for caching and real-time leaderboards.
+
+## Database Overview
+
+### MongoDB (Primary Database)
+
+| Purpose | Details |
+|---------|----------|
+| **Driver** | mongodb 6.3.0 |
+| **Database** | Configurable via `DB_NAME` env var |
+| **Connection** | Via `DB_URI` env var |
+| **Schema Validation** | Zod schemas (runtime) + TypeScript (compile-time) |
+
+**Location**: `backend/src/dal/` (Data Access Layer)
+
+### Redis (Cache & Leaderboards)
+
+| Purpose | Details |
+|---------|----------|
+| **Driver** | ioredis 4.28.5 |
+| **Connection** | Via `REDIS_URI` env var |
+| **Usage** | Caching, leaderboards, rate limiting |
+| **Scripts** | Custom Lua scripts for atomic operations |
+
+**Location**: `backend/src/init/redis.ts`
+
+## MongoDB Architecture
+
+### Database Connection
+
+```typescript title="backend/src/init/db.ts"
+import { MongoClient, Db } from "mongodb";
+
+let db: Db;
+let client: MongoClient;
+
+export async function connect(): Promise<void> {
+  const { DB_URI, DB_NAME } = process.env;
+  
+  client = new MongoClient(DB_URI, {
+    maxPoolSize: 100,
+    minPoolSize: 10,
+    maxIdleTimeMS: 30000,
+  });
+  
+  await client.connect();
+  db = client.db(DB_NAME);
+  
+  Logger.success(`Connected to database: ${DB_NAME}`);
+}
+
+export function collection<T>(name: string) {
+  return db.collection<T>(name);
+}
+```
+
+**Connection pooling:**
+- Max pool size: 100 connections
+- Min pool size: 10 connections
+- Idle timeout: 30 seconds
+
+### Collections Overview
+
+Monkeytype uses the following MongoDB collections:
+
+```
+monkeytype (database)
+├── users                 # User accounts and profiles
+├── results               # Typing test results
+├── configs               # User configurations
+├── presets               # User-created test presets
+├── ape-keys              # API keys
+├── new-quotes            # User-submitted quotes (pending)
+├── quote-ratings         # Quote rating history
+├── psa                   # Public service announcements
+├── public                # Public statistics
+├── leaderboards          # Leaderboard data (cached in Redis)
+├── logs                  # Admin logs
+├── reports               # User reports
+├── blocklist             # Blocked users/emails
+└── connections           # OAuth connections (Discord, etc.)
+```
+
+## Core Data Models
+
+### Users Collection
+
+**Schema location**: `@monkeytype/schemas/users`
+**DAL location**: `backend/src/dal/user.ts:43`
+
+```typescript
+interface DBUser {
+  _id: ObjectId;
+  uid: string;                    // Firebase UID
+  name: string;                   // Username
+  email: string;                  // Email address
+  addedAt: number;                // Registration timestamp
+  
+  // Personal bests
+  personalBests: {
+    time: Record<string, PersonalBest[]>;
+    words: Record<string, PersonalBest[]>;
+    quote: Record<string, PersonalBest[]>;
+    zen: Record<string, PersonalBest>;
+    custom: Record<string, PersonalBest>;
+  };
+  
+  // Leaderboard personal bests (cached)
+  lbPersonalBests?: {
+    time: Record<string, PersonalBest>;
+  };
+  
+  // User profile
+  banned?: boolean;
+  verified?: boolean;
+  discordId?: string;
+  discordAvatar?: string;
+  xp?: number;
+  streak?: UserStreak;
+  inventory?: UserInventory;
+  profileDetails?: UserProfileDetails;
+  
+  // Configuration
+  tags?: DBUserTag[];
+  customThemes?: WithObjectId<CustomTheme>[];
+  resultFilterPresets?: WithObjectId<ResultFilters>[];
+  
+  // Activity tracking
+  testActivity?: CountByYearAndDay;
+  lastResultHashes?: string[];
+  
+  // Admin fields
+  canReport?: boolean;
+  canManageApeKeys?: boolean;
+  bananas?: number;
+  suspicious?: boolean;
+  note?: string;
+  ips?: string[];
+}
+```
+
+**Key operations**:
+
+```typescript title="backend/src/dal/user.ts:82"
+// Create user
+export async function addUser(
+  name: string,
+  email: string,
+  uid: string
+): Promise<void> {
+  const newUser: Partial<DBUser> = {
+    name,
+    email,
+    uid,
+    addedAt: Date.now(),
+    personalBests: {
+      time: {},
+      words: {},
+      quote: {},
+      zen: {},
+      custom: {},
+    },
+  };
+  
+  await getUsersCollection().insertOne(newUser);
+}
+
+// Get user by UID
+export async function getUser(
+  uid: string,
+  stack: string
+): Promise<DBUser> {
+  const user = await getUsersCollection().findOne({ uid });
+  if (!user) throw new MonkeyError(404, "User not found", stack);
+  return user;
+}
+
+// Update personal bests
+export async function updatePersonalBests(
+  uid: string,
+  mode: Mode,
+  mode2: Mode2<Mode>,
+  personalBests: PersonalBest[]
+): Promise<void> {
+  await getUsersCollection().updateOne(
+    { uid },
+    { $set: { [`personalBests.${mode}.${mode2}`]: personalBests } }
+  );
+}
+```
+
+**Indices**:
+```javascript
+// Unique index on uid
+db.users.createIndex({ uid: 1 }, { unique: true });
+
+// Index on name for search
+db.users.createIndex({ name: 1 });
+
+// Index on email for lookups
+db.users.createIndex({ email: 1 });
+
+// Index on banned for filtering
+db.users.createIndex({ banned: 1 });
+```
+
+### Results Collection
+
+**Schema location**: `@monkeytype/schemas/results`
+**DAL location**: `backend/src/dal/result.ts:14`
+
+```typescript
+interface DBResult {
+  _id: ObjectId;
+  uid: string;                    // User ID
+  timestamp: number;              // Test completion time
+  
+  // Test configuration
+  mode: Mode;                     // "time" | "words" | "quote" | "zen" | "custom"
+  mode2: Mode2<Mode>;             // 15, 30, 60, etc.
+  language: string;               // "english", "spanish", etc.
+  difficulty: Difficulty;         // "normal" | "expert" | "master"
+  funbox?: string;                // Optional funbox mode
+  
+  // Test results
+  wpm: number;                    // Words per minute
+  rawWpm: number;                 // Raw WPM (including errors)
+  acc: number;                    // Accuracy percentage
+  consistency: number;            // Consistency score
+  
+  // Detailed stats
+  charStats: [number, number, number, number]; // [correct, incorrect, extra, missed]
+  testDuration: number;           // Actual test duration in seconds
+  afkDuration: number;            // AFK time during test
+  
+  // Advanced data (optional)
+  chartData?: {
+    wpm: number[];
+    raw: number[];
+    err: number[];
+  };
+  keySpacingStats?: {
+    average: number;
+    sd: number;
+  };
+  keyDurationStats?: {
+    average: number;
+    sd: number;
+  };
+  
+  // Organization
+  tags?: string[];                // User tags
+  
+  // Metadata
+  bailedOut?: boolean;            // Test abandoned
+  blindMode?: boolean;            // Blind mode enabled
+  lazyMode?: boolean;             // Lazy mode enabled
+  numbers?: boolean;              // Numbers enabled
+  punctuation?: boolean;          // Punctuation enabled
+  
+  // Anti-cheat
+  hash?: string;                  // Result hash for verification
+}
+```
+
+**Key operations**:
+
+```typescript title="backend/src/dal/result.ts:17"
+// Add result
+export async function addResult(
+  uid: string,
+  result: DBResult
+): Promise<{ insertedId: ObjectId }> {
+  result.uid ??= uid;
+  const res = await getResultCollection().insertOne(result);
+  return { insertedId: res.insertedId };
+}
+
+// Get user results
+export async function getResults(
+  uid: string,
+  opts?: GetResultsOpts
+): Promise<DBResult[]> {
+  const { onOrAfterTimestamp, offset, limit } = opts ?? {};
+  
+  const condition: Filter<DBResult> = { uid };
+  if (onOrAfterTimestamp) {
+    condition.timestamp = { $gte: onOrAfterTimestamp };
+  }
+  
+  let query = getResultCollection()
+    .find(condition, {
+      projection: {
+        // Exclude heavy fields for list queries
+        chartData: 0,
+        keySpacingStats: 0,
+        keyDurationStats: 0,
+      },
+    })
+    .sort({ timestamp: -1 });
+  
+  if (limit) query = query.limit(limit);
+  if (offset) query = query.skip(offset);
+  
+  return await query.toArray();
+}
+
+// Delete all user results
+export async function deleteAll(uid: string): Promise<DeleteResult> {
+  return await getResultCollection().deleteMany({ uid });
+}
+```
+
+**Indices**:
+```javascript
+// Compound index for user queries
+db.results.createIndex({ uid: 1, timestamp: -1 });
+
+// Index for leaderboard queries
+db.results.createIndex({ mode: 1, mode2: 1, language: 1, wpm: -1 });
+
+// TTL index for old results (optional)
+db.results.createIndex(
+  { timestamp: 1 },
+  { expireAfterSeconds: 31536000 } // 1 year
+);
+```
+
+### Configs Collection
+
+**DAL location**: `backend/src/dal/config.ts`
+
+```typescript
+interface DBConfig {
+  _id: ObjectId;
+  uid: string;
+  config: Config;                 // User's test configuration
+  updatedAt: number;
+}
+
+interface Config {
+  theme: string;
+  themeLight: string;
+  themeDark: string;
+  
+  // Test settings
+  mode: Mode;
+  mode2: Mode2<Mode>;
+  language: string;
+  difficulty: Difficulty;
+  
+  // Display settings
+  smoothCaret: boolean;
+  quickRestart: boolean;
+  showLiveWpm: boolean;
+  showLiveAcc: boolean;
+  showLiveBurst: boolean;
+  
+  // Sound settings
+  playSoundOnError: boolean;
+  playSoundOnClick: boolean;
+  soundVolume: number;
+  
+  // Many more settings...
+}
+```
+
+**Operations**:
+
+```typescript
+// Save user config
+export async function saveConfig(
+  uid: string,
+  config: Config
+): Promise<void> {
+  await getConfigCollection().updateOne(
+    { uid },
+    {
+      $set: {
+        config,
+        updatedAt: Date.now(),
+      },
+    },
+    { upsert: true }
+  );
+}
+
+// Get user config
+export async function getConfig(uid: string): Promise<Config> {
+  const doc = await getConfigCollection().findOne({ uid });
+  return doc?.config ?? getDefaultConfig();
+}
+```
+
+### Presets Collection
+
+**DAL location**: `backend/src/dal/preset.ts`
+
+```typescript
+interface DBPreset {
+  _id: ObjectId;
+  uid: string;
+  name: string;                   // Preset name
+  config: Partial<Config>;        // Partial config overrides
+  createdAt: number;
+}
+```
+
+**Operations**:
+
+```typescript
+// Create preset
+export async function addPreset(
+  uid: string,
+  name: string,
+  config: Partial<Config>
+): Promise<ObjectId> {
+  const preset: DBPreset = {
+    _id: new ObjectId(),
+    uid,
+    name,
+    config,
+    createdAt: Date.now(),
+  };
+  
+  const result = await getPresetCollection().insertOne(preset);
+  return result.insertedId;
+}
+
+// Get user presets
+export async function getPresets(uid: string): Promise<DBPreset[]> {
+  return await getPresetCollection()
+    .find({ uid })
+    .sort({ createdAt: -1 })
+    .toArray();
+}
+```
+
+### ApeKeys Collection
+
+**DAL location**: `backend/src/dal/ape-keys.ts`
+
+```typescript
+interface DBApeKey {
+  _id: ObjectId;
+  uid: string;
+  name: string;                   // Key name (user-defined)
+  hash: string;                   // Bcrypt hash of key
+  createdAt: number;
+  lastUsedOn: number;             // Last usage timestamp
+  enabled: boolean;               // Key active status
+  useCount: number;               // Usage counter
+}
+```
+
+**Operations**:
+
+```typescript
+import bcrypt from "bcrypt";
+
+// Generate new API key
+export async function addApeKey(
+  uid: string,
+  name: string,
+  key: string
+): Promise<ObjectId> {
+  const hash = await bcrypt.hash(key, 10);
+  
+  const apeKey: DBApeKey = {
+    _id: new ObjectId(),
+    uid,
+    name,
+    hash,
+    createdAt: Date.now(),
+    lastUsedOn: -1,
+    enabled: true,
+    useCount: 0,
+  };
+  
+  const result = await getApeKeyCollection().insertOne(apeKey);
+  return result.insertedId;
+}
+
+// Validate API key
+export async function getApeKey(
+  hash: string
+): Promise<DBApeKey | null> {
+  const apeKey = await getApeKeyCollection().findOne({ hash });
+  return apeKey;
+}
+
+// Update last used timestamp
+export async function updateLastUsedOn(
+  keyId: ObjectId
+): Promise<void> {
+  await getApeKeyCollection().updateOne(
+    { _id: keyId },
+    {
+      $set: { lastUsedOn: Date.now() },
+      $inc: { useCount: 1 },
+    }
+  );
+}
+```
+
+## Redis Architecture
+
+### Redis Connection
+
+```typescript title="backend/src/init/redis.ts:75"
+import IORedis from "ioredis";
+
+let connection: IORedis.Redis;
+
+export async function connect(): Promise<void> {
+  const { REDIS_URI } = process.env;
+  
+  connection = new IORedis(REDIS_URI, {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+    lazyConnect: true,
+  });
+  
+  await connection.connect();
+  
+  // Load custom Lua scripts
+  loadScripts(connection);
+}
+```
+
+### Redis Data Structures
+
+#### 1. Leaderboards (Sorted Sets)
+
+```typescript
+// Leaderboard key format:
+// lb:{mode}:{mode2}:{language}:scores
+// lb:{mode}:{mode2}:{language}:results
+
+// Example:
+// lb:time:60:english:scores    → Sorted set of user scores
+// lb:time:60:english:results   → Hash of user result data
+
+// Sorted set operations
+await redis.zadd(
+  "lb:time:60:english:scores",
+  wpm,          // score
+  uid           // member
+);
+
+// Get top 50
+const top50 = await redis.zrevrange(
+  "lb:time:60:english:scores",
+  0,              // start rank
+  49,             // end rank
+  "WITHSCORES"    // include scores
+);
+
+// Get user rank
+const rank = await redis.zrevrank(
+  "lb:time:60:english:scores",
+  uid
+);
+```
+
+**Custom Lua script for atomic leaderboard updates**:
+
+```typescript title="backend/src/init/redis.ts:10"
+interface RedisConnectionWithCustomMethods extends Redis {
+  addResult: (
+    keyCount: number,
+    scoresKey: string,
+    resultsKey: string,
+    maxResults: number,
+    expirationTime: number,
+    uid: string,
+    score: number,
+    data: string
+  ) => Promise<number>;
+}
+
+// Usage:
+const rank = await redis.addResult(
+  2,                                    // key count
+  "lb:time:60:english:scores",        // scores key
+  "lb:time:60:english:results",       // results key
+  50,                                   // max results to keep
+  86400,                                // expiration (1 day)
+  uid,                                  // user ID
+  wpm,                                  // score
+  JSON.stringify(resultData)            // result data
+);
+```
+
+#### 2. Configuration Cache
+
+```typescript
+// Cache live configuration
+await redis.set(
+  "config:live",
+  JSON.stringify(liveConfig),
+  "EX",
+  300  // 5 minutes TTL
+);
+
+// Get cached config
+const cached = await redis.get("config:live");
+if (cached) {
+  return JSON.parse(cached);
+}
+```
+
+#### 3. Rate Limiting
+
+```typescript
+// Rate limit key format:
+// rl:{endpoint}:{uid}
+
+// Increment counter with expiration
+await redis.multi()
+  .incr(`rl:results:${uid}`)
+  .expire(`rl:results:${uid}`, 60)  // 1 minute window
+  .exec();
+
+// Check limit
+const count = await redis.get(`rl:results:${uid}`);
+if (count && parseInt(count) > 30) {
+  throw new MonkeyError(429, "Too many requests");
+}
+```
+
+#### 4. Session Storage
+
+```typescript
+// Store temporary session data
+await redis.setex(
+  `session:${sessionId}`,
+  3600,  // 1 hour TTL
+  JSON.stringify(sessionData)
+);
+
+// Get session
+const session = await redis.get(`session:${sessionId}`);
+```
+
+### Leaderboard DAL
+
+**DAL location**: `backend/src/dal/leaderboards.ts`
+
+```typescript
+// Get leaderboard rankings
+export async function get(
+  mode: Mode,
+  mode2: Mode2<Mode>,
+  language: string,
+  skip: number,
+  limit: number
+): Promise<LeaderboardEntry[]> {
+  const leaderboardKey = `lb:${mode}:${mode2}:${language}`;
+  
+  const [entries, scores] = await redis.getResults(
+    2,
+    `${leaderboardKey}:scores`,
+    `${leaderboardKey}:results`,
+    skip,
+    skip + limit - 1,
+    "WITHSCORES",
+    "NO_USERIDS"
+  );
+  
+  return entries.map((entry, i) => ({
+    rank: skip + i + 1,
+    uid: entry.uid,
+    name: entry.name,
+    wpm: scores[i],
+    raw: entry.raw,
+    acc: entry.acc,
+    consistency: entry.consistency,
+    timestamp: entry.timestamp,
+  }));
+}
+
+// Get user's rank on leaderboard
+export async function getRank(
+  mode: Mode,
+  mode2: Mode2<Mode>,
+  language: string,
+  uid: string
+): Promise<number | null> {
+  const leaderboardKey = `lb:${mode}:${mode2}:${language}`;
+  
+  const [rank] = await redis.getRank(
+    2,
+    `${leaderboardKey}:scores`,
+    `${leaderboardKey}:results`,
+    uid,
+    "NO_SCORES",
+    "NO_USERIDS"
+  );
+  
+  return rank !== null ? rank + 1 : null;
+}
+```
+
+## Data Relationships
+
+```
+User (users collection)
+  │
+  ├─ has many → Results (results collection)
+  │                ├─ references → Tags (embedded in user)
+  │                └─ references → Config (configs collection)
+  │
+  ├─ has many → Presets (presets collection)
+  │
+  ├─ has many → ApeKeys (ape-keys collection)
+  │
+  ├─ has one → Config (configs collection)
+  │
+  └─ has many → Connections (connections collection)
+       └─ links to → Discord, GitHub, etc.
+
+Leaderboard (Redis sorted sets)
+  ├─ stores best results per user
+  └─ synchronized with → Results (MongoDB)
+```
+
+## Data Backup & Migration
+
+### MongoDB Backup
+
+```bash
+# Backup entire database
+mongodump --uri="$DB_URI" --out=/backup/$(date +%Y%m%d)
+
+# Restore database
+mongorestore --uri="$DB_URI" /backup/20260301
+```
+
+### Redis Persistence
+
+```bash
+# Redis persistence configured via redis.conf
+# RDB snapshots every 60 seconds if 1000+ keys changed
+save 60 1000
+
+# AOF (Append-Only File) for durability
+appendonly yes
+appendfsync everysec
+```
+
+## Performance Optimization
+
+### Database Indices
+
+```typescript title="backend/src/dal/leaderboards.ts:18"
+// Create indices on application start
+export async function createIndicies(): Promise<void> {
+  await db.collection("leaderboards").createIndex(
+    { mode: 1, mode2: 1, language: 1, wpm: -1 },
+    { name: "leaderboard_lookup" }
+  );
+  
+  await db.collection("results").createIndex(
+    { uid: 1, timestamp: -1 },
+    { name: "user_results" }
+  );
+}
+```
+
+### Query Optimization
+
+```typescript
+// Projection - only fetch needed fields
+const results = await getResultCollection()
+  .find({ uid })
+  .project({
+    wpm: 1,
+    acc: 1,
+    timestamp: 1,
+    // Exclude heavy fields
+    chartData: 0,
+    keySpacingStats: 0,
+  })
+  .toArray();
+
+// Limit + Skip for pagination
+const page = await getResultCollection()
+  .find({ uid })
+  .sort({ timestamp: -1 })
+  .skip(offset)
+  .limit(limit)
+  .toArray();
+```
+
+### Redis Caching Strategy
+
+```typescript
+// Cache-aside pattern
+export async function getLeaderboard(
+  mode: Mode,
+  mode2: Mode2<Mode>,
+  language: string
+): Promise<LeaderboardEntry[]> {
+  // 1. Try cache first
+  const cached = await redis.get(`cache:lb:${mode}:${mode2}:${language}`);
+  if (cached) return JSON.parse(cached);
+  
+  // 2. Query database
+  const leaderboard = await db
+    .collection("leaderboards")
+    .find({ mode, mode2, language })
+    .sort({ wpm: -1 })
+    .limit(50)
+    .toArray();
+  
+  // 3. Cache for 5 minutes
+  await redis.setex(
+    `cache:lb:${mode}:${mode2}:${language}`,
+    300,
+    JSON.stringify(leaderboard)
+  );
+  
+  return leaderboard;
+}
+```
+
+## Next Steps
+
+- [Backend Architecture](/architecture/backend) - API and controllers
+- [Frontend Architecture](/architecture/frontend) - Client-side data fetching

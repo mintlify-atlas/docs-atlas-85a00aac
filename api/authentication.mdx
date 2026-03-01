@@ -1,0 +1,453 @@
+---
+title: 'Authentication'
+description: 'Authentication methods for the Monkeytype API'
+icon: 'key'
+---
+
+## Overview
+
+Monkeytype API supports multiple authentication methods to accommodate different use cases. All authenticated requests must include proper authorization headers.
+
+## Authentication Methods
+
+### Bearer Token (Firebase JWT)
+
+Primary authentication method using Firebase ID tokens.
+
+#### How It Works
+
+1. User authenticates via Firebase (email/password, OAuth, etc.)
+2. Firebase returns an ID token
+3. Include token in `Authorization` header
+4. Backend verifies token with Firebase Admin SDK
+
+#### Request Format
+
+```bash
+curl https://api.monkeytype.com/users \
+  -H "Authorization: Bearer YOUR_FIREBASE_ID_TOKEN"
+```
+
+#### Token Requirements
+
+- Valid Firebase ID token
+- Token not expired (tokens expire after 1 hour)
+- User account exists in Monkeytype database
+
+#### Fresh Tokens
+
+Some sensitive endpoints require **fresh tokens** (issued within the last 60 seconds):
+
+- User deletion
+- Account reset
+- Email/password updates
+- Name changes
+- Token revocation
+
+```typescript
+// Endpoints requiring fresh tokens
+requireFreshToken: true
+```
+
+<Warning>
+Fresh token requirement ensures user recently authenticated before performing sensitive operations.
+</Warning>
+
+#### Token Caching
+
+By default, tokens are cached for performance. Disable caching for:
+- Email verification checks
+- Token revocation
+- Real-time permission updates
+
+```typescript
+noCache: true  // Disable token caching
+```
+
+### ApeKey Authentication
+
+API keys for programmatic access and automation.
+
+#### What Are ApeKeys?
+
+ApeKeys are user-generated API credentials that provide:
+- Long-lived authentication (no expiration)
+- Higher rate limits
+- Programmatic access to user data
+- Fine-grained control (enable/disable per key)
+
+#### Creating an ApeKey
+
+1. Authenticate with Bearer token
+2. POST to `/ape-keys` endpoint:
+
+```bash
+curl -X POST https://api.monkeytype.com/ape-keys \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Integration",
+    "enabled": true
+  }'
+```
+
+Response:
+
+```json
+{
+  "message": "Ape Key generated",
+  "data": {
+    "apeKey": "BASE64_ENCODED_KEY",
+    "apeKeyId": "507f1f77bcf86cd799439011",
+    "apeKeyDetails": {
+      "name": "My Integration",
+      "enabled": true,
+      "createdOn": 1234567890
+    }
+  }
+}
+```
+
+<Warning>
+Save the `apeKey` value immediately - it cannot be retrieved again. Only the hashed version is stored.
+</Warning>
+
+#### Using ApeKeys
+
+Include ApeKey in the `Authorization` header with `ApeKey` scheme:
+
+```bash
+curl https://api.monkeytype.com/results \
+  -H "Authorization: ApeKey YOUR_APE_KEY"
+```
+
+#### ApeKey Format
+
+ApeKeys consist of:
+- Key ID (identifies the key)
+- Secret (hashed using bcrypt)
+- Combined and base64url-encoded
+
+Format: `keyId.secret` (encoded)
+
+#### ApeKey Management
+
+**List Your ApeKeys**
+
+```bash
+curl https://api.monkeytype.com/ape-keys \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Update ApeKey**
+
+```bash
+curl -X PATCH https://api.monkeytype.com/ape-keys/{apeKeyId} \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Updated Name", "enabled": false}'
+```
+
+**Delete ApeKey**
+
+```bash
+curl -X DELETE https://api.monkeytype.com/ape-keys/{apeKeyId} \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+#### ApeKey Configuration
+
+ApeKeys can be disabled system-wide:
+
+```typescript
+configuration.apeKeys.acceptKeys  // false to disable globally
+configuration.apeKeys.endpointsEnabled  // false to disable management endpoints
+```
+
+#### Endpoint Support
+
+Not all endpoints accept ApeKeys. Check endpoint metadata:
+
+```typescript
+authenticationOptions: {
+  acceptApeKeys: true  // Endpoint accepts ApeKeys
+}
+```
+
+Endpoints accepting ApeKeys:
+- `GET /results`
+- `GET /users/personalBests`
+- `GET /users/stats`
+- `GET /users/tags`
+- `GET /users/streak`
+- `GET /leaderboards/rank`
+- And more...
+
+<Note>
+Sensitive operations (delete account, update password) never accept ApeKeys.
+</Note>
+
+### Public Endpoints
+
+Some endpoints require no authentication:
+
+- `GET /` - API status
+- `GET /leaderboards` - Public leaderboards
+- `GET /users/:name/profile` - Public profiles
+- `GET /users/checkName/:name` - Username availability
+- `POST /users/forgotPasswordEmail` - Password reset request
+
+```bash
+# No Authorization header needed
+curl https://api.monkeytype.com/leaderboards?language=english&mode=time&mode2=60
+```
+
+## Authentication Flow
+
+### Backend Authentication Process
+
+1. **Extract Authorization Header**
+   ```typescript
+   const authHeader = req.headers['authorization'];
+   ```
+
+2. **Determine Auth Scheme**
+   - `Bearer` → Verify Firebase token
+   - `ApeKey` → Validate API key
+   - `Uid` → Development-only mode
+   - None → Public endpoint or error
+
+3. **Verify Credentials**
+   - Bearer: `verifyIdToken()` via Firebase Admin
+   - ApeKey: Lookup key, verify hash with bcrypt
+
+4. **Attach Context**
+   ```typescript
+   req.ctx.decodedToken = {
+     type: 'Bearer' | 'ApeKey' | 'None',
+     uid: string,
+     email: string
+   }
+   ```
+
+5. **Check Permissions**
+   - Verify endpoint allows auth type
+   - Check user permissions (admin, quoteMod, etc.)
+   - Validate configuration requirements
+
+## Error Handling
+
+### Common Authentication Errors
+
+**401 Unauthorized - Missing Token**
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+**401 Unauthorized - Invalid Token**
+```json
+{
+  "message": "Token expired - please login again"
+}
+```
+
+**401 Unauthorized - Token Revoked**
+```json
+{
+  "message": "Token revoked - please login again"
+}
+```
+
+**401 Unauthorized - ApeKey Not Accepted**
+```json
+{
+  "message": "This endpoint does not accept ApeKeys"
+}
+```
+
+**404 Not Found - Invalid ApeKey**
+```json
+{
+  "message": "ApeKey not found"
+}
+```
+
+**470 - ApeKey Inactive**
+```json
+{
+  "message": "ApeKey is disabled"
+}
+```
+
+**471 - ApeKey Malformed**
+```json
+{
+  "message": "ApeKey structure is invalid"
+}
+```
+
+**503 Service Unavailable - ApeKeys Disabled**
+```json
+{
+  "message": "ApeKeys are not being accepted at this time"
+}
+```
+
+## Rate Limiting by Auth Type
+
+Different rate limits apply based on authentication:
+
+```typescript
+rateLimit: {
+  normal: "resultsGet",      // Bearer token limit
+  apeKey: "resultsGetApe"    // ApeKey limit (typically higher)
+}
+```
+
+### Bad Authentication Rate Limiting
+
+Failed authentication attempts are tracked:
+
+- **Limit**: 30 failed attempts per hour per IP
+- **Triggers**: Invalid tokens, wrong passwords, malformed credentials
+- **Result**: Temporary IP ban
+
+<Warning>
+Repeated authentication failures will result in a 429 error: "Too many bad authentication attempts".
+</Warning>
+
+## Development Mode
+
+### Uid Authentication (Dev Only)
+
+For local testing without Firebase:
+
+```bash
+curl https://api.monkeytype.com/users \
+  -H "Authorization: Uid YOUR_USER_ID|email@example.com"
+```
+
+<Warning>
+This method only works when `MODE=dev` in `.env`. Never available in production.
+</Warning>
+
+### Public on Dev
+
+Some endpoints become public in development:
+
+```typescript
+authenticationOptions: {
+  isPublicOnDev: true  // No auth needed in dev mode
+}
+```
+
+## Security Best Practices
+
+### Token Management
+
+1. **Never expose tokens in client code**
+   ```javascript
+   // Bad
+   const token = 'hardcoded-token';
+   
+   // Good
+   const token = await firebase.auth().currentUser.getIdToken();
+   ```
+
+2. **Refresh expired tokens**
+   ```javascript
+   const token = await firebase.auth().currentUser.getIdToken(true);
+   ```
+
+3. **Handle token expiration gracefully**
+   ```javascript
+   if (error.status === 401) {
+     await refreshToken();
+     retry(request);
+   }
+   ```
+
+### ApeKey Security
+
+1. **Store securely** - Use environment variables or secret managers
+2. **Rotate regularly** - Delete old keys, generate new ones
+3. **Disable unused keys** - Don't delete if you need audit trail
+4. **Use specific keys** - Different keys for different integrations
+5. **Monitor usage** - Check `lastUsedOn` timestamp
+
+### Request Headers
+
+Additional security headers:
+
+```bash
+curl https://api.monkeytype.com/users \
+  -H "Authorization: Bearer TOKEN" \
+  -H "X-Client-Version: 2024.12.0" \
+  -H "User-Agent: YourApp/1.0"
+```
+
+## Example: Complete Auth Flow
+
+```typescript
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+// Authenticate user
+const userCredential = await signInWithEmailAndPassword(
+  auth,
+  'user@example.com',
+  'password'
+);
+
+// Get ID token
+const idToken = await userCredential.user.getIdToken();
+
+// Make API request
+const response = await fetch('https://api.monkeytype.com/users', {
+  headers: {
+    'Authorization': `Bearer ${idToken}`,
+    'Content-Type': 'application/json'
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+## Troubleshooting
+
+### Token Verification Failed
+
+**Problem**: 401 errors despite valid token
+
+**Solutions**:
+1. Check token expiration (max 1 hour)
+2. Verify Firebase project configuration
+3. Ensure user exists in database
+4. Check for token revocation
+
+### ApeKey Not Working
+
+**Problem**: 401/503 errors with ApeKey
+
+**Solutions**:
+1. Verify endpoint accepts ApeKeys
+2. Check ApeKey is enabled
+3. Confirm system-wide ApeKeys not disabled
+4. Validate ApeKey format (base64url-encoded)
+5. Ensure ApeKey not deleted
+
+### Fresh Token Required
+
+**Problem**: "This endpoint requires a fresh token"
+
+**Solutions**:
+1. Re-authenticate user
+2. Get new token with `getIdToken(true)`
+3. Ensure token issued within last 60 seconds

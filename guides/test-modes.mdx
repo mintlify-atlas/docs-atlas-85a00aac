@@ -1,0 +1,216 @@
+---
+title: Test Modes
+description: Understanding all test modes available in Monkeytype
+---
+
+Monkeytype offers several test modes to suit different practice styles and goals. Each mode challenges you in unique ways to improve your typing speed and accuracy.
+
+## Available Test Modes
+
+<Tabs>
+  <Tab title="Time Mode">
+    ### Time Mode
+    
+    Type as many words as you can within a fixed time limit.
+    
+    **Available Durations:**
+    - 15 seconds
+    - 30 seconds  
+    - 60 seconds
+    - 120 seconds
+    - Custom duration
+    
+    **How it works:**
+    - Test starts when you begin typing
+    - Timer counts down from your selected duration
+    - Test ends automatically when time expires
+    - New words are continuously generated until time runs out
+    
+    **Best for:** Quick practice sessions, competing on leaderboards, and tracking consistent performance over standard intervals.
+    
+    <Note>
+      Tests under 15 seconds are not saved to your account.
+    </Note>
+  </Tab>
+  
+  <Tab title="Words Mode">
+    ### Words Mode
+    
+    Type a specific number of words as quickly and accurately as possible.
+    
+    **Available Word Counts:**
+    - 10 words
+    - 25 words
+    - 50 words
+    - 100 words
+    - Custom word count
+    
+    **How it works:**
+    - Test starts when you begin typing
+    - Fixed word list is generated at the start
+    - Test ends when all words are typed
+    - Your time is recorded based on completion speed
+    
+    **Best for:** Sprint practice, testing your peak performance, and improving burst speed.
+    
+    <Note>
+      Tests with fewer than 10 words are not saved to your account.
+    </Note>
+  </Tab>
+  
+  <Tab title="Quote Mode">
+    ### Quote Mode
+    
+    Type real quotes from books, movies, songs, and other sources.
+    
+    **Quote Lengths:**
+    - Short (0): Less than 100 characters
+    - Medium (1): 100-300 characters
+    - Long (2): 300-600 characters  
+    - Thicc (3): Over 600 characters
+    - All: Random selection from any length
+    
+    **How it works:**
+    - A random quote is selected based on your chosen length(s)
+    - Type the quote exactly as shown, including punctuation
+    - You can rate quotes after completion
+    - Favorite quotes can be saved for later practice
+    
+    **Special Features:**
+    - Quotes are in their original language
+    - Punctuation and numbers are always included
+    - Can search for quotes by ID
+    - Repeat quotes option available in settings
+    
+    **Best for:** Practicing with real-world text, improving punctuation handling, and enjoying varied content.
+  </Tab>
+  
+  <Tab title="Zen Mode">
+    ### Zen Mode
+    
+    A freestyle mode with no word list - just keep typing.
+    
+    **How it works:**
+    - Start typing anything you want
+    - No predefined words or time limit
+    - Test continues until you manually stop it
+    - Stats are calculated when you finish
+    - Empty word elements are generated as you type
+    
+    **Special Characteristics:**
+    - Minimum 15 seconds required for results to save
+    - Pace caret is disabled in this mode
+    - Quick restart confirmation is always required
+    - AFK detection adjusted for continuous typing
+    
+    **Best for:** Warming up, casual practice, transcribing text, or practicing without pressure.
+  </Tab>
+  
+  <Tab title="Custom Mode">
+    ### Custom Mode
+    
+    Create your own test with custom text.
+    
+    **Custom Text Options:**
+    - **Text input**: Paste or type your own content
+    - **Limit modes**:
+      - Word limit: Type a specific number of words
+      - Time limit: Type for a set duration
+      - Section limit: Divide text into sections (separated by pipes `|`)
+    - **Delimiter options**:
+      - Space-separated words (default)
+      - Pipe-delimited sections: `word1|word2|word3`
+    
+    **How it works:**
+    - Enter your custom text in the settings
+    - Choose your limit mode and value
+    - Text can include punctuation and numbers
+    - Long custom texts save progress automatically
+    - Resume where you left off in long texts
+    
+    **Special Features:**
+    - Named custom texts for easy reuse
+    - Progress tracking for long texts
+    - Section-based practice with pipe delimiter
+    
+    **Best for:** Practicing specific vocabulary, transcription training, learning code syntax, or studying foreign languages.
+    
+    <Note>
+      Custom tests require at least 10 words or 15 seconds to be saved.
+    </Note>
+  </Tab>
+</Tabs>
+
+## Test Configuration
+
+### Common Options (All Modes)
+
+<AccordionGroup>
+  <Accordion title="Punctuation">
+    Adds punctuation marks to words (periods, commas, quotes, etc.).
+    
+    - Disabled in quote and zen modes
+    - Increases difficulty and realism
+    - Tests your shift key usage
+  </Accordion>
+  
+  <Accordion title="Numbers">
+    Mixes numbers into the word list.
+    
+    - Disabled in quote and zen modes
+    - Tests number row proficiency
+    - Useful for programming practice
+  </Accordion>
+  
+  <Accordion title="Language">
+    Select from hundreds of languages and word lists.
+    
+    - Default: English
+    - Includes programming languages (JavaScript, Python, etc.)
+    - Special lists: English 1k, 10k, 25k, etc.
+  </Accordion>
+</AccordionGroup>
+
+## Invalid Tests
+
+Tests will not be saved if they:
+- Are too short (under 15 seconds or 10 words)
+- Detect AFK (away from keyboard)
+- Are repeated tests (using the same wordset)
+- Have unusual WPM values (over 350 WPM for most modes)
+- Have accuracy outside valid ranges
+
+## Tips for Each Mode
+
+<CardGroup cols={2}>
+  <Card title="Time Mode Tips" icon="clock">
+    - Maintain consistency throughout
+    - Don't slow down near the end
+    - 60s tests are best for leaderboards
+  </Card>
+  
+  <Card title="Words Mode Tips" icon="font">
+    - Great for testing peak performance
+    - 10-word tests measure burst speed
+    - 50+ word tests measure endurance
+  </Card>
+  
+  <Card title="Quote Mode Tips" icon="quote-right">
+    - Practice real-world typing
+    - Rate quotes to improve the database
+    - Use favorite quotes for benchmark tests
+  </Card>
+  
+  <Card title="Custom Mode Tips" icon="edit">
+    - Save frequently used texts with names
+    - Use pipe delimiter for structured practice
+    - Great for certification test prep
+  </Card>
+</CardGroup>
+
+## Mode-Specific Source Code References
+
+The test modes are implemented in:
+- Mode logic: `frontend/src/ts/test/test-logic.ts:387-392`
+- Word generation: `frontend/src/ts/test/words-generator.ts`
+- Configuration: `frontend/src/ts/config-metadata.ts:148-180`

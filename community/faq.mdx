@@ -1,0 +1,368 @@
+---
+title: "Frequently Asked Questions"
+description: "Common questions about Monkeytype"
+icon: "circle-question"
+---
+
+## General Questions
+
+<AccordionGroup>
+  <Accordion title="What is Monkeytype?">
+    Monkeytype is a minimalistic and customizable typing test platform. It helps you measure and improve your typing speed and accuracy through various test modes and configurations.
+    
+    Key features include:
+    - Multiple test modes (time-based, word count, quotes)
+    - Real-time WPM, accuracy, and error tracking
+    - Customizable themes and settings
+    - Account system to save your history
+    - Natural typing experience with live feedback
+  </Accordion>
+
+  <Accordion title="How does the typing test work?">
+    Monkeytype presents you with text prompts that you type as accurately and quickly as possible. As you type:
+    
+    - Characters appear in place as you type them
+    - Errors are highlighted in real-time
+    - Your WPM (words per minute) and accuracy are calculated live
+    - Results are displayed when you complete the test
+    
+    The test emulates a natural typing experience by showing what you type without interrupting your flow. This approach provides straightforward, real-time feedback on your performance.
+  </Accordion>
+
+  <Accordion title="Is Monkeytype free to use?">
+    Yes, Monkeytype is completely free to use. The project is open source and available on [GitHub](https://github.com/monkeytypegame/monkeytype).
+    
+    If you want to support the project, you can:
+    - [Donate on Ko-fi](https://ko-fi.com/monkeytype)
+    - [Become a Patron](https://www.patreon.com/monkeytype)
+    - [Buy merchandise](https://www.monkeytype.store/)
+  </Accordion>
+
+  <Accordion title="Do I need an account to use Monkeytype?">
+    No, you can use Monkeytype without an account. However, creating an account allows you to:
+    
+    - Save your typing speed history
+    - Track your progress over time
+    - Sync settings across devices
+    - Participate in leaderboards
+    - Complete and track challenges
+    - Access advanced features and customization
+  </Accordion>
+</AccordionGroup>
+
+## Test Modes and Features
+
+<AccordionGroup>
+  <Accordion title="What test modes are available?">
+    Monkeytype offers various test modes to suit different preferences:
+    
+    **By Duration:**
+    - Time-based tests (15s, 30s, 60s, 120s)
+    - Custom time lengths
+    
+    **By Content:**
+    - Word tests (10, 25, 50, 100 words, etc.)
+    - Quote tests (short, medium, long quotes)
+    - Custom text
+    
+    **Special Modes:**
+    - Punctuation mode
+    - Numbers mode
+    - Multiple languages
+    - Various difficulty levels
+    
+    You can also use Funbox modifiers for fun challenges and variations.
+  </Accordion>
+
+  <Accordion title="What are Funbox modifiers?">
+    Funbox modifiers are just-for-fun test variations that change how the typing test works. Examples include:
+    
+    - Different visual effects
+    - Modified typing rules
+    - Challenge modes
+    - Special constraints
+    
+    These modifiers add variety and fun to your typing practice, though results from Funbox tests may not count toward your regular statistics.
+  </Accordion>
+
+  <Accordion title="What languages are supported?">
+    Monkeytype supports a wide variety of languages for typing tests. The exact list includes dozens of languages from around the world.
+    
+    To contribute a new language or improve existing ones, check the [Language Guidelines](https://github.com/monkeytypegame/monkeytype/blob/master/docs/LANGUAGES.md) in the repository.
+  </Accordion>
+
+  <Accordion title="Can I practice with punctuation and numbers?">
+    Yes. Monkeytype includes:
+    
+    - **Punctuation mode**: Adds punctuation marks to test your real-world typing scenarios
+    - **Numbers mode**: Includes numbers in the test text
+    
+    These modes can be toggled on/off independently to customize your practice.
+  </Accordion>
+</AccordionGroup>
+
+## Account and Data
+
+<AccordionGroup>
+  <Accordion title="How do I create an account?">
+    Creating an account on Monkeytype:
+    
+    1. Click the account icon in the top navigation
+    2. Choose your authentication method (Google, GitHub, etc.)
+    3. Complete the authentication process
+    4. Your account is ready to use
+    
+    Monkeytype uses Firebase for authentication, ensuring secure and reliable account management.
+  </Accordion>
+
+  <Accordion title="What data does Monkeytype store?">
+    When you create an account, Monkeytype stores:
+    
+    - Your typing test results and history
+    - Personal bests and statistics
+    - Custom settings and preferences
+    - Theme choices and configurations
+    - Challenge progress and completions
+    
+    All data is stored securely using MongoDB for user data and Redis for ephemeral data (like daily leaderboards).
+  </Accordion>
+
+  <Accordion title="Is my data private and secure?">
+    Yes. Monkeytype takes privacy and security seriously:
+    
+    - Authentication is handled by Firebase
+    - Data is stored securely in encrypted databases
+    - The project follows security best practices
+    - For security concerns, see [SECURITY.md](https://github.com/monkeytypegame/monkeytype/blob/master/docs/SECURITY.md)
+    
+    Your typing data is personal to your account and not shared without your permission.
+  </Accordion>
+
+  <Accordion title="Can I delete my account and data?">
+    Yes, you can delete your account and associated data. For account deletion requests or data privacy concerns, contact support at contact@monkeytype.com.
+  </Accordion>
+
+  <Accordion title="Can I export my typing data?">
+    Account data export features depend on current functionality. For questions about exporting your data, check the settings page or contact support at contact@monkeytype.com.
+  </Accordion>
+</AccordionGroup>
+
+## Customization
+
+<AccordionGroup>
+  <Accordion title="Can I customize the appearance?">
+    Absolutely! Monkeytype is highly customizable:
+    
+    - **Themes**: Choose from hundreds of community-created themes
+    - **Fonts**: Select different font styles
+    - **Caret style**: Customize the cursor appearance
+    - **Smooth caret**: Enable smooth caret movement
+    - **Layout**: Adjust the test layout and spacing
+    - **Colors**: Use colorful mode or flip test colors
+    
+    All customization options are available in the settings.
+  </Accordion>
+
+  <Accordion title="How do I create or contribute a theme?">
+    To contribute a theme:
+    
+    1. Ensure your theme is unique and follows the [Theme Guidelines](https://github.com/monkeytypegame/monkeytype/blob/master/docs/THEMES.md)
+    2. Text color should be black or white (or very close)
+    3. Theme must be readable with all display options
+    4. Add your theme to the `_list` file
+    5. Submit a pull request
+    
+    Check [THEMES.md](https://github.com/monkeytypegame/monkeytype/blob/master/docs/THEMES.md) for detailed instructions.
+  </Accordion>
+
+  <Accordion title="What keyboard layouts are supported?">
+    Monkeytype supports multiple keyboard layouts beyond standard QWERTY, including:
+    
+    - QWERTY variants
+    - DVORAK
+    - COLEMAK
+    - And many more
+    
+    To contribute a new layout, see [LAYOUTS.md](https://github.com/monkeytypegame/monkeytype/blob/master/docs/LAYOUTS.md).
+  </Accordion>
+
+  <Accordion title="Can I change sounds and effects?">
+    Yes, Monkeytype includes customizable sounds and visual effects:
+    
+    - Typing sounds
+    - Click sounds
+    - Visual effects
+    - Smooth animations
+    - Focus mode (minimizes distractions)
+    
+    All these can be configured in the settings to match your preferences.
+  </Accordion>
+</AccordionGroup>
+
+## Contributing
+
+<AccordionGroup>
+  <Accordion title="How can I contribute to Monkeytype?">
+    There are many ways to contribute:
+    
+    **Code Contributions:**
+    - Fix bugs
+    - Add features
+    - Improve performance
+    - Write tests
+    
+    **Content Contributions:**
+    - Add themes
+    - Contribute quotes
+    - Add language support
+    - Create keyboard layouts
+    
+    **Community:**
+    - Help others on Discord
+    - Report bugs
+    - Suggest features
+    - Write documentation
+    
+    Start with the [Contributing Guide](https://github.com/monkeytypegame/monkeytype/blob/master/docs/CONTRIBUTING.md).
+  </Accordion>
+
+  <Accordion title="I want to add quotes or languages. How do I start?">
+    For basic contributions (quotes, languages), you don't need a development environment:
+    
+    1. Read [CONTRIBUTING_BASIC.md](https://github.com/monkeytypegame/monkeytype/blob/master/docs/CONTRIBUTING_BASIC.md)
+    2. Fork the repository on GitHub
+    3. Make your changes using GitHub's web interface
+    4. Submit a pull request
+    
+    For quotes: Follow [Quote Guidelines](https://github.com/monkeytypegame/monkeytype/blob/master/docs/QUOTES.md)
+    For languages: Follow [Language Guidelines](https://github.com/monkeytypegame/monkeytype/blob/master/docs/LANGUAGES.md)
+  </Accordion>
+
+  <Accordion title="I want to contribute code. What do I need?">
+    For code contributions:
+    
+    1. Read [CONTRIBUTING_ADVANCED.md](https://github.com/monkeytypegame/monkeytype/blob/master/docs/CONTRIBUTING_ADVANCED.md)
+    2. Set up a local development environment
+    3. Familiarize yourself with the tech stack (TypeScript, Node.js, MongoDB, Firebase)
+    4. Join the `#development` channel on [Discord](https://discord.gg/monkeytype)
+    5. Discuss your planned contribution
+    6. Follow the coding standards and guidelines
+    
+    The tech stack includes: TypeScript, Node.js, Express, MongoDB, Firebase, Redis, Solid.js, and more.
+  </Accordion>
+
+  <Accordion title="What are the contribution guidelines?">
+    Key guidelines:
+    
+    - Follow the [Code of Conduct](https://github.com/monkeytypegame/monkeytype/blob/master/docs/CODE_OF_CONDUCT.md)
+    - Use [Conventional Commits](https://www.conventionalcommits.org/) for PR titles
+    - Test your changes thoroughly
+    - Follow existing code style (uses Oxfmt and Oxlint)
+    - Provide clear descriptions in pull requests
+    - Be responsive to feedback and reviews
+    
+    Read the full guidelines in [CONTRIBUTING.md](https://github.com/monkeytypegame/monkeytype/blob/master/docs/CONTRIBUTING.md).
+  </Accordion>
+</AccordionGroup>
+
+## Technical Questions
+
+<AccordionGroup>
+  <Accordion title="What technologies does Monkeytype use?">
+    Monkeytype is built with:
+    
+    **Frontend:**
+    - TypeScript
+    - Solid.js
+    - Vite
+    - Tailwind CSS
+    - SASS
+    
+    **Backend:**
+    - Node.js
+    - Express
+    - TypeScript
+    
+    **Databases & Services:**
+    - MongoDB (user data)
+    - Firebase (authentication)
+    - Redis (ephemeral data, leaderboards)
+    
+    **Tools:**
+    - Turborepo (monorepo management)
+    - Oxc (Oxfmt and Oxlint for formatting/linting)
+    - Vitest (testing)
+  </Accordion>
+
+  <Accordion title="Can I self-host Monkeytype?">
+    Yes, Monkeytype can be self-hosted. Detailed instructions are available in [SELF_HOSTING.md](https://github.com/monkeytypegame/monkeytype/blob/master/docs/SELF_HOSTING.md).
+    
+    Self-hosting requires:
+    - Firebase account (for authentication)
+    - MongoDB (for data storage)
+    - Redis (for ephemeral data)
+    - Node.js environment
+    
+    Note that self-hosting is for advanced users and requires technical knowledge.
+  </Accordion>
+
+  <Accordion title="Is Monkeytype open source?">
+    Yes, Monkeytype is fully open source and available on GitHub:
+    
+    - **Main repository**: https://github.com/monkeytypegame/monkeytype
+    - **Discord bot**: https://github.com/monkeytypegame/monkeytype-bot
+    
+    The project welcomes contributions from the community and follows open source best practices.
+  </Accordion>
+
+  <Accordion title="I found a bug. How do I report it?">
+    To report a bug:
+    
+    1. Check if it's already reported in [GitHub Issues](https://github.com/monkeytypegame/monkeytype/issues)
+    2. Create a new issue with:
+       - Clear description of the bug
+       - Steps to reproduce
+       - Expected vs. actual behavior
+       - Browser and OS information
+       - Screenshots if applicable
+    3. Or email contact@monkeytype.com
+    4. For security issues, see [SECURITY.md](https://github.com/monkeytypegame/monkeytype/blob/master/docs/SECURITY.md)
+    
+    See all support options at [Support](/community/support).
+  </Accordion>
+</AccordionGroup>
+
+## Need More Help?
+
+If your question isn't answered here, check out these resources:
+
+<CardGroup cols={2}>
+  <Card
+    title="Support Channels"
+    icon="life-ring"
+    href="/community/support"
+  >
+    Find the right support channel for your needs.
+  </Card>
+  <Card
+    title="Discord Community"
+    icon="discord"
+    href="/community/discord"
+  >
+    Join the Discord for real-time help and discussion.
+  </Card>
+  <Card
+    title="GitHub Issues"
+    icon="github"
+    href="https://github.com/monkeytypegame/monkeytype/issues"
+  >
+    Search existing issues or create a new one.
+  </Card>
+  <Card
+    title="GitHub Discussions"
+    icon="comments"
+    href="https://github.com/monkeytypegame/monkeytype/discussions"
+  >
+    Join community discussions and ask questions.
+  </Card>
+</CardGroup>

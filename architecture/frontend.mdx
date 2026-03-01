@@ -1,0 +1,473 @@
+---
+title: Frontend Architecture
+description: SolidJS framework, component structure, state management, and build system
+---
+
+The Monkeytype frontend is a high-performance single-page application built with **SolidJS**, a reactive UI framework that compiles to efficient vanilla JavaScript.
+
+## Technology Overview
+
+### Core Stack
+
+| Technology | Version | Purpose |
+|------------|---------|----------|
+| **SolidJS** | 1.9.10 | Reactive UI framework |
+| **Vite** | 7.1.12 | Build tool and dev server |
+| **TypeScript** | 6.0.0-beta | Type safety |
+| **TailwindCSS** | 4.1.18 | Utility-first CSS |
+| **TanStack Query** | 5.90.23 | Server state management |
+| **Firebase** | 12.0.0 | Authentication |
+
+**Source location**: `frontend/src/ts/`
+
+### Why SolidJS?
+
+Solid was chosen for its performance characteristics:
+- **Fine-grained reactivity**: Updates only what changes, no virtual DOM
+- **Compiled output**: No runtime overhead
+- **Small bundle size**: Efficient for a typing test application
+- **React-like syntax**: Familiar JSX with better performance
+
+## Project Structure
+
+```
+frontend/
+├── src/
+│   ├── ts/                    # TypeScript source
+│   │   ├── components/        # SolidJS components
+│   │   │   ├── common/        # Shared UI components
+│   │   │   ├── core/          # Core app components (Theme, DevTools)
+│   │   │   ├── layout/        # Layout components (Footer, Overlays)
+│   │   │   ├── modals/        # Modal dialogs
+│   │   │   ├── pages/         # Page components
+│   │   │   └── ui/            # UI primitives
+│   │   ├── pages/             # Page controllers (non-Solid)
+│   │   ├── controllers/       # Business logic controllers
+│   │   ├── states/            # Application state
+│   │   ├── observables/       # Observable patterns
+│   │   ├── signals/           # Solid signals
+│   │   ├── stores/            # Solid stores
+│   │   ├── queries/           # TanStack Query hooks
+│   │   ├── hooks/             # Custom Solid hooks
+│   │   ├── modals/            # Modal logic
+│   │   ├── elements/          # Custom elements
+│   │   ├── utils/             # Utility functions
+│   │   ├── constants/         # Constants and config
+│   │   ├── commandline/       # Command palette
+│   │   ├── input/             # Keyboard input handling
+│   │   ├── test/              # Test logic
+│   │   ├── ape/               # API client
+│   │   ├── event-handlers/    # Event handling
+│   │   ├── types/             # TypeScript types
+│   │   ├── firebase.ts        # Firebase initialization
+│   │   ├── auth.tsx           # Authentication
+│   │   ├── config.ts          # User configuration
+│   │   ├── db.ts              # Local database (IndexedDB)
+│   │   └── index.ts           # Application entry point
+│   ├── html/                  # HTML templates
+│   ├── styles/                # Global styles (SCSS)
+│   └── index.html             # Main HTML file
+├── static/                    # Static assets
+├── vite.config.ts             # Vite configuration
+└── package.json
+```
+
+## Application Entry Point
+
+The application bootstraps through a carefully orchestrated initialization sequence:
+
+```typescript title="frontend/src/ts/index.ts"
+import { init } from "./firebase";
+import { onAuthStateChanged } from "./auth";
+import { loadFromLocalStorage } from "./config";
+import { mountComponents } from "./components/mount";
+
+// 1. Lock Math.random (anti-cheat)
+Object.defineProperty(Math, "random", {
+  value: Math.random,
+  writable: false,
+  configurable: false,
+});
+
+// 2. Load user config from localStorage
+void loadFromLocalStorage();
+
+// 3. Initialize Firebase auth
+void init(onAuthStateChanged).then(() => {
+  Cookies.activateWhatsAccepted();
+});
+
+// 4. Mount SolidJS components
+mountComponents();
+```
+
+## Component Architecture
+
+### Component Mounting System
+
+Solid components are mounted to specific mount points in the HTML:
+
+```typescript title="frontend/src/ts/components/mount.tsx:1"
+import { render } from "solid-js/web";
+import { QueryClientProvider } from "@tanstack/solid-query";
+
+const components: Record<string, () => JSXElement> = {
+  footer: () => <Footer />,
+  aboutpage: () => <AboutPage />,
+  profilepage: () => <ProfilePage />,
+  modals: () => <Modals />,
+  overlays: () => <Overlays />,
+  theme: () => <Theme />,
+};
+
+export function mountComponents(): void {
+  for (const [query, component] of Object.entries(components)) {
+    mountToMountpoint(`mount[data-component=${query}]`, component);
+  }
+}
+```
+
+**HTML mount points:**
+```html
+<mount data-component="theme"></mount>
+<mount data-component="modals"></mount>
+<mount data-component="footer"></mount>
+```
+
+### Component Types
+
+**1. Page Components** (`components/pages/`)
+- Top-level route components
+- Example: `ProfilePage`, `AboutPage`
+- Handle data fetching via TanStack Query
+
+**2. Layout Components** (`components/layout/`)
+- Structural components
+- Example: `Footer`, `Overlays`
+
+**3. Common Components** (`components/common/`)
+- Reusable UI components
+- Shared across pages
+
+**4. Modal Components** (`components/modals/`)
+- Dialog and modal implementations
+- Centralized in `Modals` component
+
+## State Management
+
+Monkeytype uses a **multi-layered state management** approach:
+
+### 1. Solid Signals (Reactive State)
+
+```typescript title="frontend/src/ts/signals/"
+import { createSignal } from "solid-js";
+
+// Fine-grained reactive state
+const [count, setCount] = createSignal(0);
+
+// Components automatically re-render when signals change
+function Counter() {
+  return <div>Count: {count()}</div>;
+}
+```
+
+**Used for**: UI state, temporary state, derived state
+
+### 2. Solid Stores (Complex State)
+
+```typescript title="frontend/src/ts/stores/"
+import { createStore } from "solid-js/store";
+
+// For complex nested objects
+const [state, setState] = createStore({
+  user: { name: "" },
+  settings: { theme: "dark" },
+});
+
+// Fine-grained updates
+setState("user", "name", "Alice");
+```
+
+**Used for**: Complex nested state, performance-critical state
+
+### 3. Observable Pattern (Legacy State)
+
+```typescript title="frontend/src/ts/observables/"
+// Legacy observable pattern (being migrated to Solid)
+class ThemeController {
+  private listeners: (() => void)[] = [];
+  
+  subscribe(fn: () => void) {
+    this.listeners.push(fn);
+  }
+  
+  notify() {
+    this.listeners.forEach(fn => fn());
+  }
+}
+```
+
+**Used for**: Legacy code, gradual migration to Solid
+
+### 4. TanStack Query (Server State)
+
+```typescript title="frontend/src/ts/queries/"
+import { createQuery } from "@tanstack/solid-query";
+
+// Server state with caching and refetching
+function useUserProfile(uid: string) {
+  return createQuery(() => ({
+    queryKey: ["profile", uid],
+    queryFn: () => apiClient.users.getProfile({ params: { uid } }),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  }));
+}
+```
+
+**Features:**
+- Automatic caching
+- Background refetching
+- Optimistic updates
+- Request deduplication
+
+### 5. Local Storage (Persistent State)
+
+```typescript title="frontend/src/ts/config.ts:1"
+// User configuration persisted to localStorage
+export default class Config {
+  static save(): void {
+    localStorage.setItem("config", JSON.stringify(this.config));
+  }
+  
+  static loadFromLocalStorage(): void {
+    const stored = localStorage.getItem("config");
+    if (stored) this.config = JSON.parse(stored);
+  }
+}
+```
+
+**Used for**: User preferences, theme settings, test configuration
+
+### 6. IndexedDB (Local Database)
+
+```typescript title="frontend/src/ts/db.ts:1"
+// Local database for offline support
+import { openDB } from "idb";
+
+const db = await openDB("monkeytype", 1, {
+  upgrade(db) {
+    db.createObjectStore("results");
+    db.createObjectStore("snapshot");
+  },
+});
+```
+
+**Used for**: Caching user data, offline support, PWA functionality
+
+## Routing
+
+Monkeytype uses a **custom routing system** rather than a traditional SPA router:
+
+```typescript title="frontend/src/ts/controllers/route-controller.ts"
+// Page-based routing with SPA navigation
+class RouteController {
+  navigate(page: string) {
+    // Hide current page
+    this.currentPage?.hide();
+    
+    // Show new page
+    const nextPage = this.pages[page];
+    nextPage.show();
+    
+    // Update URL without reload
+    history.pushState({}, "", `/${page}`);
+  }
+}
+```
+
+**Why custom routing?**
+- Typing test needs to stay mounted (preserve state)
+- Avoids full component unmount/remount
+- Optimized for the specific use case
+
+## API Client (APE)
+
+The frontend uses **ts-rest** for type-safe API calls:
+
+```typescript title="frontend/src/ts/ape/"
+import { initClient } from "@ts-rest/core";
+import { contract } from "@monkeytype/contracts";
+
+// Type-safe API client
+export const apiClient = initClient(contract, {
+  baseUrl: import.meta.env.BACKEND_URL,
+  baseHeaders: async () => ({
+    Authorization: `Bearer ${await getAuthToken()}`,
+  }),
+});
+
+// Usage (fully typed!)
+const response = await apiClient.users.getProfile({
+  params: { uid: "user123" },
+});
+
+if (response.status === 200) {
+  console.log(response.body.data.name); // ✅ Typed!
+}
+```
+
+**Benefits:**
+- Full type safety from backend to frontend
+- Autocomplete for all endpoints
+- Compile-time error checking
+- Single source of truth (contracts package)
+
+## Build System (Vite)
+
+### Development Build
+
+```typescript title="frontend/vite.config.ts:327"
+export default defineConfig(({ mode }) => {
+  const isDevelopment = mode !== "production";
+  
+  return {
+    plugins: [
+      solidPlugin(),        // SolidJS support
+      tailwindcss(),        // TailwindCSS integration
+      oxlintChecker(),      // Fast linting
+      Inspect(),            // Debug plugin transforms
+    ],
+    server: {
+      port: 3000,
+      host: true,
+      open: true,
+    },
+  };
+});
+```
+
+**Dev server features:**
+- Hot Module Replacement (HMR)
+- Fast refresh for Solid components
+- TypeScript type checking
+- Instant server start (under 1 second)
+
+### Production Build
+
+```typescript title="frontend/vite.config.ts:217"
+const prodPlugins = [
+  ViteMinifyPlugin(),           // HTML minification
+  minifyJson(),                 // JSON minification
+  fontawesomeSubset(),          // Icon subsetting
+  VitePWA({                     // Progressive Web App
+    registerType: "autoUpdate",
+    workbox: {
+      runtimeCaching: [/* ... */],
+    },
+  }),
+  sentryVitePlugin({            // Error tracking
+    release: { name: clientVersion },
+  }),
+];
+```
+
+**Build optimizations:**
+- Code splitting by route
+- Tree shaking unused code
+- Asset optimization (images, fonts)
+- Vendor chunk splitting
+- Brotli compression
+
+### Bundle Analysis
+
+```typescript title="frontend/vite.config.ts:259"
+rollupOptions: {
+  output: {
+    manualChunks: (id) => {
+      if (id.includes("@sentry")) return "vendor-sentry";
+      if (id.includes("@firebase")) return "vendor-firebase";
+      if (id.includes("monkeytype/packages")) return "monkeytype-packages";
+      if (id.includes("node_modules")) return "vendor";
+    },
+  },
+}
+```
+
+**Output bundles:**
+- `vendor.js` - Third-party libraries
+- `vendor-firebase.js` - Firebase SDK
+- `vendor-sentry.js` - Error tracking
+- `monkeytype-packages.js` - Shared packages
+- `[page].js` - Page-specific code
+
+## Performance Optimizations
+
+### 1. Lazy Loading
+
+```typescript
+// Load modules on demand
+const getDevOptionsModal = async () => {
+  return await import("./modals/dev-options");
+};
+```
+
+### 2. Memoization
+
+```typescript
+import { createMemo } from "solid-js";
+
+const expensiveValue = createMemo(() => {
+  return calculateSomethingExpensive(props.data);
+});
+```
+
+### 3. Virtual Scrolling
+
+```typescript
+// For large lists (leaderboards, results)
+import { For } from "solid-js";
+
+<For each={visibleItems()}>
+  {(item) => <ResultRow result={item} />}
+</For>
+```
+
+### 4. PWA Caching
+
+```typescript title="frontend/vite.config.ts:157"
+workbox: {
+  runtimeCaching: [
+    {
+      urlPattern: (options) => options.sameOrigin,
+      handler: "NetworkFirst",
+    },
+  ],
+}
+```
+
+## Testing
+
+### Unit Tests (Vitest)
+
+```typescript
+import { render } from "@solidjs/testing-library";
+import { describe, it, expect } from "vitest";
+
+describe("Component", () => {
+  it("renders correctly", () => {
+    const { getByText } = render(() => <Component />);
+    expect(getByText("Hello")).toBeInTheDocument();
+  });
+});
+```
+
+**Run tests:**
+```bash
+pnpm test           # Run all tests
+pnpm test-coverage  # With coverage report
+```
+
+## Next Steps
+
+- [Backend Architecture](/architecture/backend) - API and server design
+- [Database Architecture](/architecture/database) - Data models and storage

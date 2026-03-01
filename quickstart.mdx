@@ -1,80 +1,226 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start Guide
+description: Get started with Monkeytype in under a minute
 ---
 
-## Get started in three steps
+# Quick Start Guide
 
-Get your documentation site running locally and make your first customization.
+Get started with Monkeytype and take your first typing test in just a few simple steps. No account required to begin!
 
-### Step 1: Set up your local environment
+## Taking Your First Test
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+<Steps>
+  <Step title="Visit Monkeytype">
+    Navigate to [monkeytype.com](https://monkeytype.com) in your web browser. The site will load with a clean, minimalist interface showing the typing test area.
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    <Note>
+    Monkeytype works best on desktop browsers. While mobile support exists, typing tests are optimized for keyboard input.
+    </Note>
+  </Step>
+  
+  <Step title="Choose Your Test Settings">
+    Before starting, you can customize your test using the options at the top of the page:
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+    - **Mode**: Select between `time`, `words`, `quote`, `zen`, or `custom`
+    - **Duration/Count**: Choose test length (e.g., 15s, 30s, 60s for time mode or 10, 25, 50, 100 for words mode)
+    - **Language**: Pick from numerous supported languages (default is English)
+    - **Punctuation**: Toggle punctuation marks in the test text
+    - **Numbers**: Toggle numbers in the test text
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    The default settings (15 seconds, English, no punctuation/numbers) are perfect for beginners.
+    
+    <Tip>
+    For your first test, stick with the default settings: **15 seconds** in **English** without punctuation or numbers.
+    </Tip>
+  </Step>
+  
+  <Step title="Start Typing">
+    Simply click on the typing area or start typing to begin the test immediately. You'll see:
+    
+    - **White text**: Words you need to type
+    - **Timer**: Countdown showing remaining time (top-right)
+    - **Live WPM**: Your current words per minute (top-right)
+    - **Live Accuracy**: Your typing accuracy percentage (top-right)
+    
+    As you type:
+    - Correct characters appear in white
+    - Incorrect characters appear in red
+    - Extra characters are highlighted
+    - The active character has a blinking caret
+    
+    <Note>
+    The test starts automatically when you begin typing. No need to click a "Start" button.
+    </Note>
+  </Step>
+  
+  <Step title="Complete the Test">
+    Keep typing until the timer runs out (or until you've typed all the words in words mode). The test will automatically end and show your results.
+    
+    **During the test**, you can:
+    - Press `Backspace` to correct mistakes
+    - Press `Tab` or `Esc` to restart the test (if quick restart is enabled)
+    - Press `Ctrl + Shift + P` to pause (creates a pause screen overlay)
+    
+    <Warning>
+    Some funbox modes like "no_quit" prevent you from restarting the test until completion.
+    </Warning>
+  </Step>
+  
+  <Step title="View Your Results">
+    After completing the test, you'll see a detailed results screen showing:
+    
+    - **WPM (Words Per Minute)**: Your typing speed
+    - **Accuracy**: Percentage of correctly typed characters
+    - **Raw WPM**: Speed including errors
+    - **Consistency**: How steady your typing speed was throughout the test
+    - **Character Stats**: Correct, incorrect, extra, and missed characters
+    - **Time Typing**: Total time spent typing (excluding pauses)
+    
+    You'll also see a graph showing your WPM over time and detailed character-by-character breakdown.
+    
+    <Tip>
+    Your results are saved locally in your browser, but creating an account lets you track progress across devices and compete on leaderboards.
+    </Tip>
+  </Step>
+</Steps>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+## Creating an Account (Optional)
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+While you can use Monkeytype without an account, creating one unlocks powerful features:
 
-### Step 3: Go live
+<Steps>
+  <Step title="Click the Account Icon">
+    Click the account icon in the top-right corner of the page, or press `Ctrl + Shift + A` to open the account menu.
+  </Step>
+  
+  <Step title="Sign Up">
+    Choose your preferred authentication method:
+    - Email and password
+    - Google account
+    - GitHub account
+    
+    Follow the prompts to create your account through Firebase Authentication.
+    
+    <Note>
+    Email verification may be required depending on your chosen authentication method.
+    </Note>
+  </Step>
+  
+  <Step title="Sync Your Settings">
+    Once logged in, your test results and settings will automatically sync to your account. You can now:
+    - Access your typing history
+    - Track progress over time
+    - Compete on leaderboards
+    - Save custom themes and presets
+    - Join challenges
+  </Step>
+</Steps>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+## Keyboard Shortcuts
 
-## Next steps
+Monkeytype includes numerous keyboard shortcuts to enhance your experience:
 
-Now that you have your docs running, explore these key features:
+| Shortcut | Action |
+|----------|--------|
+| `Tab` or `Esc` | Quick restart (when enabled) |
+| `Ctrl + Shift + P` | Toggle command palette |
+| `Ctrl + Shift + A` | Open account menu |
+| `Ctrl + Shift + T` | Toggle theme |
+| `Ctrl + Shift + C` | Open configuration |
+| `Ctrl + Shift + K` | Toggle keyboard display |
+
+<Tip>
+Press `?` or access the command palette to see all available keyboard shortcuts and commands.
+</Tip>
+
+## Customizing Your Experience
+
+After taking your first test, explore these customization options:
+
+### Change Theme
+
+1. Click the theme button (bottom-right) or press `Ctrl + Shift + T`
+2. Browse through 400+ available themes
+3. Preview themes in real-time
+4. Favorite themes for quick access
+5. Create custom themes with your own colors
+
+### Adjust Test Settings
+
+Click the settings icon or press `Ctrl + Shift + C` to access:
+
+- **Caret Style**: Choose from default, block, outline, underline, or fun options (carrot, banana, monkey)
+- **Smooth Caret**: Set caret animation speed (off, slow, medium, fast)
+- **Confidence Mode**: Hide previous words as you type
+- **Stop on Error**: Prevent progression until errors are corrected
+- **Quick Restart**: Set restart key preference (off, esc, tab, enter)
+- **Sound Effects**: Enable typing sounds and error alerts
+- **Font**: Choose from numerous font options
+
+### Try Different Modes
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Time Mode" icon="clock">
+    Test your speed for a specific duration. Great for consistent benchmarking.
+  </Card>
+  
+  <Card title="Words Mode" icon="font">
+    Type a set number of words. Perfect for short, focused practice sessions.
+  </Card>
+  
+  <Card title="Quote Mode" icon="quote-left">
+    Practice with real quotes from books, movies, and famous speeches.
+  </Card>
+  
+  <Card title="Zen Mode" icon="om">
+    Type freely without limits. Ideal for warming up or stress-free practice.
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Explore Features" icon="compass" href="/features">
+    Discover all the features Monkeytype offers, from funbox modes to detailed analytics.
+  </Card>
+  
+  <Card title="Join the Community" icon="users" href="https://discord.gg/monkeytype">
+    Connect with other typists on Discord to share tips and participate in challenges.
+  </Card>
+  
+  <Card title="API Documentation" icon="code" href="/api-reference">
+    Learn how to integrate Monkeytype data into your own applications.
+  </Card>
+  
+  <Card title="Contribute" icon="code-branch" href="/development">
+    Help improve Monkeytype by contributing themes, features, or bug fixes.
+  </Card>
+</CardGroup>
+
+## Common Questions
+
+<AccordionGroup>
+  <Accordion title="What is a good WPM for beginners?">
+    Average typing speed is around 40 WPM. Beginners typically score 20-40 WPM, while experienced typists can reach 60-80 WPM. Professional typists often exceed 100 WPM.
+  </Accordion>
+  
+  <Accordion title="Why does my WPM vary between tests?">
+    WPM naturally varies based on text difficulty, familiarity with words, punctuation/numbers, and current focus. Consistency improves with practice.
+  </Accordion>
+  
+  <Accordion title="Should I look at the keyboard while typing?">
+    Touch typing (typing without looking at the keyboard) is generally faster and more efficient. Monkeytype's real-time feedback helps you learn touch typing naturally.
+  </Accordion>
+  
+  <Accordion title="How are personal bests calculated?">
+    Personal bests (PBs) are tracked separately for each combination of mode, duration/word count, language, difficulty, and punctuation/numbers settings.
+  </Accordion>
+  
+  <Accordion title="Do I need to correct all mistakes?">
+    Not by default. You can enable "Stop on Error" mode if you want to be forced to correct mistakes before continuing.
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+Practice regularly in short sessions (5-10 minutes) rather than long sessions. Consistency is key to improving your typing speed!
+</Tip>

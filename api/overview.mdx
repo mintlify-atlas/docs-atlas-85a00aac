@@ -1,0 +1,230 @@
+---
+title: 'API Overview'
+description: 'Introduction to the Monkeytype API'
+icon: 'code'
+---
+
+## Introduction
+
+The Monkeytype API provides programmatic access to user data, test results, leaderboards, and configuration. Built with TypeScript and using the ts-rest library for type-safe contracts, the API offers a modern, REST-compliant interface.
+
+## Base URL
+
+The API is accessible at:
+
+```
+https://api.monkeytype.com
+```
+
+For local development:
+
+```
+http://localhost:5005
+```
+
+<Note>
+The default port is 5005, but can be configured via the `PORT` environment variable.
+</Note>
+
+## API Architecture
+
+### ts-rest Contract System
+
+Monkeytype uses [@ts-rest/core](https://ts-rest.com/) to define type-safe API contracts. This approach ensures:
+
+- **Type Safety**: Shared types between frontend and backend
+- **Contract-First Design**: API schema defined before implementation
+- **Automatic Validation**: Request/response validation using Zod schemas
+- **OpenAPI Generation**: Swagger documentation auto-generated from contracts
+
+Contracts are located in `packages/contracts/src/` and define:
+- Request/response schemas
+- Path parameters and query strings
+- Authentication requirements
+- Rate limiting rules
+
+### Request/Response Format
+
+All API responses follow a consistent format:
+
+```json
+{
+  "message": "Success message",
+  "data": {
+    // Response payload
+  }
+}
+```
+
+### Error Responses
+
+Errors return appropriate HTTP status codes with details:
+
+```json
+{
+  "message": "Error description",
+  "validationErrors": ["field: error details"]
+}
+```
+
+Common status codes:
+- `200` - Success
+- `400` - Bad Request
+- `401` - Unauthorized
+- `403` - Forbidden
+- `404` - Not Found
+- `422` - Validation Error
+- `429` - Rate Limit Exceeded
+- `500` - Internal Server Error
+- `503` - Service Unavailable
+
+## API Versioning
+
+The API version is returned in the root endpoint:
+
+```bash
+curl https://api.monkeytype.com/
+```
+
+```json
+{
+  "message": "ok",
+  "data": {
+    "version": "2024.12.0",
+    "uptime": 1234567
+  }
+}
+```
+
+## Rate Limiting
+
+Rate limits protect the API from abuse and ensure fair usage:
+
+### Standard Rate Limits
+
+- **Root Limit**: 1,000 requests per hour per IP
+- **Bad Authentication**: 30 failed attempts per hour per IP
+- **Endpoint-Specific**: Varies by endpoint (see individual endpoint docs)
+
+### ApeKey Rate Limits
+
+ApeKeys have separate, typically higher rate limits:
+- Different limits apply when using ApeKey authentication
+- Specified per endpoint in contracts
+
+### Rate Limit Headers
+
+Rate limit information is included in response headers:
+
+```
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1234567890
+```
+
+### Exceeding Rate Limits
+
+When rate limited:
+
+```json
+{
+  "message": "Request limit reached, please try again later."
+}
+```
+
+HTTP Status: `429 Too Many Requests`
+
+<Warning>
+In development mode, rate limits are multiplied by 100 to facilitate testing.
+</Warning>
+
+## Authentication Methods
+
+Monkeytype supports three authentication methods:
+
+1. **Bearer Token** (Firebase JWT) - Primary method for user authentication
+2. **ApeKey** - API keys for programmatic access
+3. **Public Endpoints** - No authentication required
+
+See [Authentication](/api/authentication) for detailed information.
+
+## CORS and Security
+
+The API implements:
+
+- **CORS**: Cross-origin requests enabled with exposed headers
+- **Helmet**: Security headers automatically applied
+- **Trust Proxy**: IP forwarding support for accurate rate limiting
+- **ETag**: Weak ETag generation for caching
+
+## Maintenance Mode
+
+When the server is under maintenance:
+
+```json
+{
+  "message": "Server is down for maintenance"
+}
+```
+
+HTTP Status: `503 Service Unavailable`
+
+## Available Endpoints
+
+The API provides the following resource groups:
+
+- **Users** (`/users`) - User account management and profiles
+- **Results** (`/results`) - Test results and statistics
+- **Leaderboards** (`/leaderboards`) - Global and daily leaderboards
+- **Configs** (`/configs`) - User configuration management
+- **Presets** (`/presets`) - Test preset management
+- **Quotes** (`/quotes`) - Quote submissions and ratings
+- **ApeKeys** (`/ape-keys`) - API key management
+- **PSAs** (`/psas`) - Public service announcements
+- **Admin** (`/admin`) - Administrative functions
+
+See [API Endpoints](/api/endpoints) for complete documentation.
+
+## Getting Started
+
+1. **Authentication**: Choose your authentication method
+2. **Test Connection**: Verify API accessibility
+3. **Explore Endpoints**: Review available operations
+4. **Handle Errors**: Implement proper error handling
+5. **Respect Rate Limits**: Monitor usage and implement backoff
+
+## SDK and Client Libraries
+
+The frontend uses a TypeScript client generated from ts-rest contracts:
+
+```typescript
+import { contract } from '@monkeytype/contracts';
+import { initClient } from '@ts-rest/core';
+
+const client = initClient(contract, {
+  baseUrl: 'https://api.monkeytype.com',
+  baseHeaders: {
+    'Authorization': 'Bearer YOUR_TOKEN'
+  }
+});
+```
+
+## OpenAPI/Swagger Documentation
+
+Interactive API documentation is available at:
+
+```
+http://localhost:5005/docs
+```
+
+<Note>
+Swagger documentation is auto-generated from ts-rest contracts and includes request/response examples.
+</Note>
+
+## Support
+
+For API issues or questions:
+- Check existing documentation
+- Review contract definitions in `packages/contracts/src/`
+- Submit issues on GitHub
+- Join the Discord community
