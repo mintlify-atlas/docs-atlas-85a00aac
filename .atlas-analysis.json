@@ -1,0 +1,107 @@
+{
+  "projectType": "saas",
+  "projectName": "Monkeytype",
+  "projectDescription": "A minimalistic and customizable typing test with themes, account system, and real-time performance tracking.",
+  "theme": "palm",
+  "primaryColor": "#e2b714",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "features"
+            ]
+          },
+          {
+            "group": "Using Monkeytype",
+            "pages": [
+              "guides/test-modes",
+              "guides/customization",
+              "guides/account-system",
+              "guides/themes"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/funbox",
+              "advanced/challenges",
+              "advanced/keyboard-layouts"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Contributing",
+            "pages": [
+              "contributing/getting-started",
+              "contributing/basic-contributions",
+              "contributing/advanced-contributions",
+              "contributing/guidelines"
+            ]
+          },
+          {
+            "group": "Architecture",
+            "pages": [
+              "architecture/overview",
+              "architecture/frontend",
+              "architecture/backend",
+              "architecture/database"
+            ]
+          },
+          {
+            "group": "API Reference",
+            "pages": [
+              "api/overview",
+              "api/authentication",
+              "api/endpoints"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Community",
+        "groups": [
+          {
+            "group": "Resources",
+            "pages": [
+              "community/support",
+              "community/discord",
+              "community/faq"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Minimalistic typing test with real-time feedback",
+    "Account system with typing speed history tracking",
+    "Highly customizable with themes, sounds, and test configurations",
+    "Multiple test modes (words, time, quotes, custom)",
+    "Live WPM, accuracy, and error displays",
+    "Leaderboards and challenges",
+    "Multi-language support with 100+ languages",
+    "Funbox mode for creative test variations"
+  ],
+  "publicApiSurface": [
+    "POST /api/results - Submit typing test result",
+    "GET /api/user - Get user profile and stats",
+    "GET /api/leaderboard - Get daily/weekly leaderboards",
+    "POST /api/config - Update user configuration",
+    "GET /api/quotes - Get typing test quotes",
+    "POST /api/user/signup - Create new account",
+    "POST /api/user/login - Authenticate user",
+    "GET /api/presets - Get saved test presets"
+  ]
+}
