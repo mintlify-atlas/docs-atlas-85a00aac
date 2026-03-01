@@ -1,0 +1,559 @@
+---
+title: XP and Progression System
+description: Learn how XP is earned, streak bonuses work, and badges are unlocked in Monkeytype's progression system.
+---
+
+## Overview
+
+Monkeytype features a comprehensive XP and progression system that rewards consistent typing practice, accuracy, and challenge completion. Earn XP to climb the weekly leaderboards, maintain streaks for bonuses, and unlock special badges.
+
+## XP Calculation
+
+### Base XP
+
+XP is earned based on the time you spend typing:
+
+```typescript
+// From backend/src/api/controllers/result.ts:714
+const baseXp = Math.round((testDuration - afkDuration) * 2);
+```
+
+<Note>
+  **Base formula**: `(Test Duration - AFK Time) × 2 = Base XP`
+  
+  Example: A 60-second test with no AFK time = 120 base XP
+</Note>
+
+### XP Modifiers and Bonuses
+
+Your base XP is multiplied by various modifiers based on your performance:
+
+#### 1. Accuracy Bonuses
+
+<CardGroup cols={2}>
+  <Card title="100% Accuracy" icon="bullseye">
+    **+50% bonus**
+    
+    Perfect accuracy with zero mistakes.
+  </Card>
+  
+  <Card title="Corrected Everything" icon="eraser">
+    **+25% bonus**
+    
+    Less than 100% accuracy but corrected all mistakes.
+  </Card>
+</CardGroup>
+
+```typescript
+// From backend/src/api/controllers/result.ts:723-730
+if (acc === 100) {
+  modifier += 0.5;
+  breakdown.fullAccuracy = Math.round(baseXp * 0.5);
+} else if (correctedEverything) {
+  modifier += 0.25;
+  breakdown.corrected = Math.round(baseXp * 0.25);
+}
+```
+
+#### 2. Mode and Difficulty Bonuses
+
+| Bonus Type | Modifier | When Applied |
+|------------|----------|-------------|
+| Quote mode | +50% | Typing real sentences |
+| Punctuation | +40% | Punctuation enabled |
+| Numbers | +10% | Numbers enabled |
+
+```typescript
+// From backend/src/api/controllers/result.ts:732-745
+if (mode === "quote") {
+  modifier += 0.5;
+  breakdown.quote = Math.round(baseXp * 0.5);
+} else {
+  if (punctuation) {
+    modifier += 0.4;
+    breakdown.punctuation = Math.round(baseXp * 0.4);
+  }
+  if (numbers) {
+    modifier += 0.1;
+    breakdown.numbers = Math.round(baseXp * 0.1);
+  }
+}
+```
+
+#### 3. Funbox Difficulty Bonus
+
+Funboxes add XP based on their difficulty level:
+
+```typescript
+// From backend/src/api/controllers/result.ts:748-759
+if (funboxBonusConfiguration > 0 && resultFunboxes.length !== 0) {
+  const funboxModifier = resultFunboxes.reduce((sum, funboxName) => {
+    const funbox = getFunbox(funboxName);
+    const difficultyLevel = funbox?.difficultyLevel ?? 0;
+    return sum + Math.max(difficultyLevel * funboxBonusConfiguration, 0);
+  }, 0);
+
+  if (funboxModifier > 0) {
+    modifier += funboxModifier;
+    breakdown.funbox = Math.round(baseXp * funboxModifier);
+  }
+}
+```
+
+The funbox bonus is configurable per server. Each funbox has a difficulty level, and the total modifier is summed across all active funboxes.
+
+#### 4. Streak Bonus
+
+Maintaining a daily typing streak grants increasing XP bonuses:
+
+```typescript
+// From backend/src/api/controllers/result.ts:761-777
+if (xpConfiguration.streak.enabled) {
+  const streakModifier = parseFloat(
+    mapRange(
+      streak,
+      0,
+      xpConfiguration.streak.maxStreakDays,
+      0,
+      xpConfiguration.streak.maxStreakMultiplier,
+      true,
+    ).toFixed(1),
+  );
+
+  if (streakModifier > 0) {
+    modifier += streakModifier;
+    breakdown.streak = Math.round(baseXp * streakModifier);
+  }
+}
+```
+
+The streak bonus scales linearly from 0 to the configured maximum multiplier based on your streak length.
+
+<Note>
+  Streak bonuses are configurable per server. Check your instance's configuration for `maxStreakDays` and `maxStreakMultiplier` values.
+</Note>
+
+#### 5. Incomplete Tests
+
+You earn XP for incomplete tests based on accuracy:
+
+```typescript
+// From backend/src/api/controllers/result.ts:779-790
+if (incompleteTests !== undefined && incompleteTests.length > 0) {
+  incompleteTests.forEach((it: { acc: number; seconds: number }) => {
+    let mod = (it.acc - 50) / 50;
+    if (mod < 0) mod = 0;
+    incompleteXp += Math.round(it.seconds * mod);
+  });
+  breakdown.incomplete = incompleteXp;
+}
+```
+
+Only tests with >50% accuracy contribute to incomplete XP.
+
+### Accuracy Penalty
+
+After all bonuses are applied, your accuracy affects the final XP:
+
+```typescript
+// From backend/src/api/controllers/result.ts:792-811
+const accuracyModifier = (acc - 50) / 50;
+const xpAfterAccuracy = Math.round(xpWithModifiers * accuracyModifier);
+breakdown.accPenalty = xpWithModifiers - xpAfterAccuracy;
+```
+
+<Warning>
+  **Accuracy below 50% results in 0 XP!**
+  
+  The accuracy modifier formula:
+  - 100% accuracy = 1.0x (full XP)
+  - 75% accuracy = 0.5x (half XP)
+  - 50% accuracy = 0x (no XP)
+</Warning>
+
+### Daily Bonus
+
+Earn a bonus for your first test each day:
+
+```typescript
+// From backend/src/api/controllers/result.ts:794-806
+if (isSafeNumber(lastResultTimestamp)) {
+  const lastResultDay = getStartOfDayTimestamp(lastResultTimestamp);
+  const today = getCurrentDayTimestamp();
+  if (lastResultDay !== today) {
+    const proportionalXp = Math.round(currentTotalXp * 0.05);
+    dailyBonus = Math.max(
+      Math.min(maxDailyBonus, proportionalXp),
+      minDailyBonus,
+    );
+    breakdown.daily = dailyBonus;
+  }
+}
+```
+
+The daily bonus is:
+- **5% of your total XP** (proportional to your level)
+- Capped between `minDailyBonus` and `maxDailyBonus` (configurable)
+- Only awarded once per day
+
+### Final XP Calculation
+
+```typescript
+// From backend/src/api/controllers/result.ts:808-814
+const xpAfterAccuracy = Math.round(xpWithModifiers * accuracyModifier);
+const totalXp =
+  Math.round((xpAfterAccuracy + incompleteXp) * gainMultiplier) + dailyBonus;
+```
+
+Formula:
+```
+Final XP = ((Base XP × Modifiers × Accuracy) + Incomplete XP) × Gain Multiplier + Daily Bonus
+```
+
+## XP Breakdown
+
+After completing a test, you receive a detailed XP breakdown:
+
+```typescript
+// Response from backend/src/api/controllers/result.ts:653-655
+{
+  "xp": 245,
+  "dailyXpBonus": true,
+  "xpBreakdown": {
+    "base": 120,
+    "fullAccuracy": 60,
+    "punctuation": 48,
+    "streak": 24,
+    "daily": 50,
+    "accPenalty": 0,
+    "configMultiplier": 1.0
+  }
+}
+```
+
+## Streak System
+
+### How Streaks Work
+
+Streaks track consecutive days of typing activity:
+
+```typescript
+// From backend/src/dal/user.ts:1127-1159
+export async function updateStreak(
+  uid: string,
+  timestamp: number,
+): Promise<number> {
+  const user = await getPartialUser(uid, "calculate streak", ["streak"]);
+  const streak: UserStreak = {
+    lastResultTimestamp: user.streak?.lastResultTimestamp ?? 0,
+    length: user.streak?.length ?? 0,
+    maxLength: user.streak?.maxLength ?? 0,
+    hourOffset: user.streak?.hourOffset,
+  };
+
+  if (isYesterday(streak.lastResultTimestamp, streak.hourOffset ?? 0)) {
+    streak.length += 1;
+  } else if (!isToday(streak.lastResultTimestamp, streak.hourOffset ?? 0)) {
+    void addImportantLog("streak_lost", streak, uid);
+    streak.length = 1;
+  }
+
+  if (streak.length > streak.maxLength) {
+    streak.maxLength = streak.length;
+  }
+
+  streak.lastResultTimestamp = timestamp;
+  await getUsersCollection().updateOne({ uid }, { $set: { streak } });
+
+  return streak.length;
+}
+```
+
+### Streak Rules
+
+<Steps>
+  <Step title="Start a streak">
+    Complete a typing test to begin your streak at day 1.
+  </Step>
+  
+  <Step title="Maintain the streak">
+    Complete at least one test each day. Tests from yesterday increment the streak by 1.
+  </Step>
+  
+  <Step title="Lose the streak">
+    If you skip a day (no test completed yesterday or today), your streak resets to 1.
+  </Step>
+</Steps>
+
+<Note>
+  The system tracks both your **current streak** and **max streak** (longest streak ever achieved).
+</Note>
+
+### Hour Offset
+
+Customize when your "day" starts:
+
+```typescript
+// From backend/src/dal/user.ts:1162-1175
+export async function setStreakHourOffset(
+  uid: string,
+  hourOffset: number,
+): Promise<void> {
+  await getUsersCollection().updateOne(
+    { uid },
+    {
+      $set: {
+        "streak.hourOffset": hourOffset,
+        "streak.lastResultTimestamp": Date.now(),
+      },
+    },
+  );
+}
+```
+
+<Warning>
+  You can only set the hour offset **once**. This prevents streak manipulation. Choose carefully!
+</Warning>
+
+**API Endpoint:**
+
+```typescript
+POST /users/streakHourOffset
+{
+  "hourOffset": -5  // UTC offset in hours (e.g., -5 for EST)
+}
+```
+
+## Badge System
+
+### Types of Badges
+
+Badges are earned through various achievements:
+
+1. **Milestone Badges** - Awarded for reaching specific XP or test count milestones
+2. **Streak Badges** - Earned by maintaining long typing streaks
+3. **Challenge Badges** - Unlocked by completing special challenges
+4. **Premium Badge** - Granted to premium subscribers
+5. **Special Event Badges** - Limited-time or unique achievement badges
+
+### 365-Day Streak Badge
+
+The most prestigious streak badge is awarded at 365 consecutive days:
+
+```typescript
+// From backend/src/api/controllers/result.ts:558-577
+const shouldGetBadge =
+  streak >= 365 &&
+  user.inventory?.badges?.find((b) => b.id === 14) === undefined &&
+  !badgeWaitingInInbox;
+
+if (shouldGetBadge) {
+  const mail = buildMonkeyMail({
+    subject: "Badge",
+    body: "Congratulations for reaching a 365 day streak! You have been awarded a special badge. Now, go touch some grass.",
+    rewards: [
+      {
+        type: "badge",
+        item: {
+          id: 14,
+        },
+      },
+    ],
+  });
+  await UserDAL.addToInbox(uid, [mail], req.ctx.configuration.users.inbox);
+}
+```
+
+<Note>
+  Badge ID 14 is the 365-day streak badge. It's delivered to your inbox when you reach the milestone.
+</Note>
+
+### Badge Display and Selection
+
+You can select which badge to display:
+
+```typescript
+// Update profile to select a badge
+PATCH /users/profile
+{
+  "selectedBadgeId": 14
+}
+```
+
+Selected badges appear on:
+- Your profile
+- Leaderboard entries
+- Friends lists
+
+From `backend/src/api/controllers/result.ts:511`:
+
+```typescript
+const selectedBadgeId = user.inventory?.badges?.find((b) => b.selected)?.id;
+```
+
+### Badge Delivery
+
+Badges are delivered via the inbox system:
+
+1. Achievement is detected (e.g., 365-day streak)
+2. A mail is created with the badge as a reward
+3. Mail is added to your inbox
+4. You claim the badge from your inbox
+5. Badge is added to your inventory
+
+## Weekly XP Leaderboard
+
+### How It Works
+
+XP earned during the current week contributes to the Weekly XP Leaderboard:
+
+```typescript
+// From backend/src/api/controllers/result.ts:599-618
+const weeklyXpLeaderboard = WeeklyXpLeaderboard.get(
+  weeklyXpLeaderboardConfig,
+);
+if (userEligibleForLeaderboard && xpGained.xp > 0 && weeklyXpLeaderboard) {
+  weeklyXpLeaderboardRank = await weeklyXpLeaderboard.addResult(
+    weeklyXpLeaderboardConfig,
+    {
+      entry: {
+        uid,
+        name: user.name,
+        discordAvatar: user.discordAvatar,
+        discordId: user.discordId,
+        badgeId: selectedBadgeId,
+        lastActivityTimestamp: Date.now(),
+        isPremium,
+        timeTypedSeconds: totalDurationTypedSeconds,
+      },
+      xpGained: xpGained.xp,
+    },
+  );
+}
+```
+
+### Eligibility Requirements
+
+```typescript
+// From backend/src/api/controllers/result.ts:497-509
+const minTimeTyping = (await getCachedConfiguration(true)).leaderboards
+  .minTimeTyping;
+
+const userEligibleForLeaderboard =
+  user.banned !== true &&
+  user.lbOptOut !== true &&
+  (isDevEnvironment() || (user.timeTyping ?? 0) > minTimeTyping);
+```
+
+To appear on leaderboards, you must:
+- Not be banned
+- Not have opted out of leaderboards
+- Have at least 2 hours (7,200 seconds) of total typing time
+
+<Note>
+  The minimum time typing requirement (`minTimeTyping`) is configurable per server and defaults to 2 hours from `backend/src/constants/base-configuration.ts:99`.
+</Note>
+
+### Viewing the Leaderboard
+
+```typescript
+GET /leaderboards/weekly-xp?page=0&pageSize=50
+
+// Response:
+{
+  "entries": [
+    {
+      "uid": "...",
+      "name": "username",
+      "rank": 1,
+      "totalXp": 15420,
+      "timeTypedSeconds": 3600,
+      "badgeId": 14,
+      "isPremium": true,
+      // ... other fields
+    }
+  ],
+  "count": 1250
+}
+```
+
+## Test Activity Tracking
+
+Every completed test increments your daily test count:
+
+```typescript
+// From backend/src/dal/user.ts:695-705
+export async function incrementTestActivity(
+  user: Pick<DBUser, "uid">,
+  date: Date,
+): Promise<void> {
+  const dayOfYear = getDayOfYear(date);
+
+  await getUsersCollection().updateOne(
+    { uid: user.uid },
+    { $inc: { [`testActivity.${date.getFullYear()}.${dayOfYear - 1}`]: 1 } },
+  );
+}
+```
+
+This data powers:
+- Activity heatmaps on profiles
+- Test activity history (premium feature)
+- Streak calculations
+
+## XP Configuration
+
+Server administrators can tune XP settings in the configuration:
+
+```typescript
+// From backend/src/constants/base-configuration.ts:62-73
+xp: {
+  enabled: false,
+  funboxBonus: 0,
+  gainMultiplier: 0,
+  maxDailyBonus: 0,
+  minDailyBonus: 0,
+  streak: {
+    enabled: false,
+    maxStreakDays: 0,
+    maxStreakMultiplier: 0,
+  },
+}
+```
+
+## Frequently Asked Questions
+
+<AccordionGroup>
+  <Accordion title="Why didn't I gain XP for my test?">
+    XP is **not** earned for:
+    - Zen mode tests
+    - Tests with accuracy below 50%
+    - When XP is disabled server-wide
+    
+    Check your accuracy and ensure XP features are enabled.
+  </Accordion>
+  
+  <Accordion title="How do I recover a lost streak?">
+    Streaks cannot be manually recovered. You must restart from day 1 by completing a test.
+    
+    The system logs streak losses for administrators to review in case of server issues.
+  </Accordion>
+  
+  <Accordion title="Can I see my XP breakdown from past tests?">
+    The XP breakdown is returned immediately after completing a test. Historical breakdowns are not stored in the database.
+    
+    Consider recording your XP gains manually or exporting result data regularly.
+  </Accordion>
+  
+  <Accordion title="Why is my daily bonus different each day?">
+    The daily bonus is proportional to your total XP:
+    ```
+    Daily Bonus = min(max(Total XP × 0.05, minDailyBonus), maxDailyBonus)
+    ```
+    As your total XP grows, so does your daily bonus (up to the maximum).
+  </Accordion>
+  
+  <Accordion title="Do incomplete tests affect my streak?">
+    No. Only completed tests count toward maintaining your streak. Incomplete tests contribute XP but don't update the streak counter.
+  </Accordion>
+</AccordionGroup>

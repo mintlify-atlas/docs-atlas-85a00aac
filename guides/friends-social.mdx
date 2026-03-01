@@ -1,0 +1,217 @@
+---
+title: Friends and Social Features
+description: Connect with other typists, send friend requests, and compete on friends-only leaderboards.
+---
+
+## Overview
+
+Monkeytype's social features allow you to connect with other typists, track their progress, and compete on exclusive friends-only leaderboards. Build your typing community and see how you stack up against your connections.
+
+## Managing Connections
+
+### Sending Friend Requests
+
+<Steps>
+  <Step title="Find a user">
+    Navigate to a user's profile by visiting `/profile/:username` or searching for them.
+  </Step>
+  
+  <Step title="Send request">
+    Click the "Add Friend" button to send a connection request.
+    
+    ```typescript
+    POST /connections
+    {
+      "receiverName": "username"
+    }
+    ```
+  </Step>
+  
+  <Step title="Wait for acceptance">
+    The request will show as "pending" until the other user accepts or rejects it.
+  </Step>
+</Steps>
+
+<Note>
+  You can have a maximum of **100 connections** per user. If you reach this limit, you'll need to remove existing connections before adding new ones.
+</Note>
+
+<Warning>
+  You cannot send a friend request to yourself. The system will reject this with: "You cannot be your own friend, sorry."
+</Warning>
+
+### Accepting or Rejecting Requests
+
+When you receive a friend request, you have three options:
+
+<CardGroup cols={3}>
+  <Card title="Accept" icon="check">
+    Accept the request to add them to your friends list. Both users will be able to see each other on friends-only leaderboards.
+  </Card>
+  
+  <Card title="Reject" icon="xmark">
+    Decline the request without blocking. They can send another request in the future.
+  </Card>
+  
+  <Card title="Block" icon="ban">
+    Block the user to prevent future connection requests from them.
+  </Card>
+</CardGroup>
+
+**API Endpoints:**
+
+```typescript
+// Accept or reject a request
+PATCH /connections/:id
+{
+  "status": "accepted" | "rejected" | "blocked"
+}
+
+// View all your connections
+GET /connections?status=pending&type=incoming
+// status: pending, accepted, blocked
+// type: incoming, outgoing, or omit for both
+```
+
+### Viewing Your Connections
+
+You can filter your connections by status and type:
+
+- **Status**: `pending`, `accepted`, `blocked`
+- **Type**: `incoming` (requests you received), `outgoing` (requests you sent)
+
+The API endpoint at `backend/src/api/controllers/connections.ts:21` supports these filters:
+
+```typescript
+GET /connections?status=accepted&type=outgoing
+```
+
+### Removing Connections
+
+To remove a friend or cancel a pending request:
+
+```typescript
+DELETE /connections/:id
+```
+
+<Note>
+  You can delete connections you initiated (pending or accepted) or connections where you are the receiver.
+</Note>
+
+## Friends-Only Leaderboards
+
+### Weekly XP Leaderboard
+
+Once you have accepted connections, you can view a friends-only version of the Weekly XP Leaderboard. This shows:
+
+- Your rank among friends
+- Your global rank (if not opted out)
+- Total XP earned this week
+- Time spent typing
+
+**How it works:**
+
+1. The system aggregates results from all your accepted connections
+2. Each friend's XP and typing time is displayed
+3. Rankings update in real-time as you and your friends type
+
+**API Endpoint:**
+
+```typescript
+GET /leaderboards/weekly-xp?friendsOnly=true
+```
+
+The friends-only leaderboard uses the same XP calculation as the global leaderboard, but only includes users in your accepted connections list.
+
+<Note>
+  The friends leaderboard is implemented using MongoDB aggregation pipelines in `backend/src/dal/connections.ts:220` via the `aggregateWithAcceptedConnections` function.
+</Note>
+
+### Viewing Friends' Profiles
+
+Access your friends' profiles to see:
+
+- Personal bests (15s, 30s, 60s, 120s time modes and 10, 25, 50, 100 word modes)
+- Typing statistics (completed tests, time typing)
+- Current streak and max streak
+- XP and badges
+- Test activity (if they have public activity enabled)
+
+```typescript
+GET /users/friends
+```
+
+This endpoint returns an array of friend objects with their public profile information.
+
+## Connection States
+
+Connections can be in one of three states:
+
+| State | Description | Actions Available |
+|-------|-------------|-------------------|
+| `pending` | Request sent but not yet accepted | Cancel (initiator), Accept/Reject/Block (receiver) |
+| `accepted` | Active friendship | Remove connection |
+| `blocked` | User blocked | Remove block |
+
+<Warning>
+  When you block a user, they cannot send you new connection requests. The blocking status is one-directional - blocking a user doesn't automatically block you from their side.
+</Warning>
+
+## Privacy Considerations
+
+- Premium status is only visible on leaderboards if premium features are enabled server-wide
+- Users who opt out of leaderboards won't appear on friends leaderboards
+- Profile visibility settings control what information friends can see
+
+## Technical Details
+
+### Connection Key System
+
+The backend uses a unique key system to prevent duplicate connections:
+
+```typescript
+// From backend/src/dal/connections.ts:332
+function getKey(initiatorUid: string, receiverUid: string): string {
+  const ids = [initiatorUid, receiverUid];
+  ids.sort();
+  return ids.join("/");
+}
+```
+
+This ensures that only one connection can exist between any two users, regardless of who initiated it.
+
+### Name Updates
+
+When you change your username, the system automatically updates your name in all connections:
+
+```typescript
+// From backend/src/api/controllers/user.ts:391
+await ConnectionsDal.updateName(uid, name);
+```
+
+Your friends will see your new name immediately without needing to re-add you.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Why can't I send a friend request?">
+    - You may have reached the maximum of 100 connections
+    - A connection (pending, accepted, or blocked) may already exist
+    - The user may have blocked you
+    - You may be trying to add yourself
+  </Accordion>
+  
+  <Accordion title="My friend isn't showing on the leaderboard">
+    - Ensure the connection status is "accepted"
+    - Your friend must have earned XP this week
+    - Your friend may have opted out of leaderboards
+    - Your friend may be banned
+  </Accordion>
+  
+  <Accordion title="How do I see who sent me friend requests?">
+    Use the connections endpoint with filters:
+    ```typescript
+    GET /connections?status=pending&type=incoming
+    ```
+  </Accordion>
+</AccordionGroup>

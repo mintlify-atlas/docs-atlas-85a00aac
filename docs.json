@@ -37,7 +37,11 @@
               "guides/test-modes",
               "guides/customization",
               "guides/account-system",
-              "guides/themes"
+              "guides/themes",
+              "guides/profile",
+              "guides/friends-social",
+              "guides/progression",
+              "guides/premium"
             ]
           },
           {

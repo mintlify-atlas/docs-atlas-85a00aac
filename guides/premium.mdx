@@ -1,0 +1,354 @@
+---
+title: Premium Features
+description: Unlock premium benefits including higher result limits, test activity history, and exclusive badges.
+---
+
+## Overview
+
+Monkeytype Premium enhances your typing experience with increased result storage, detailed activity tracking, and visual badges to show your support for the platform.
+
+<Note>
+  Premium features must be enabled server-wide by administrators. Check with your instance administrator to confirm availability.
+</Note>
+
+## Premium Benefits
+
+### 1. Increased Result Limit
+
+The most significant premium benefit is dramatically increased result storage.
+
+<CardGroup cols={2}>
+  <Card title="Regular Users" icon="user">
+    **1,000 results**
+    
+    Standard result history for tracking your progress.
+  </Card>
+  
+  <Card title="Premium Users" icon="crown">
+    **10,000 results**
+    
+    10x more storage for comprehensive long-term analysis.
+  </Card>
+</CardGroup>
+
+**Technical Implementation:**
+
+The limit is enforced in `backend/src/api/controllers/result.ts:92-95`:
+
+```typescript
+const maxLimit =
+  premiumFeaturesEnabled && userHasPremium
+    ? req.ctx.configuration.results.limits.premiumUser  // 10,000
+    : req.ctx.configuration.results.limits.regularUser; // 1,000
+```
+
+From `backend/src/constants/base-configuration.ts:20-22`:
+
+```typescript
+limits: {
+  regularUser: 1000,
+  premiumUser: 10000,
+}
+```
+
+<Warning>
+  If you exceed your result limit, older results are **not** automatically deleted. However, you won't be able to retrieve results beyond your limit. Consider exporting your data periodically.
+</Warning>
+
+### 2. Test Activity History Access
+
+Premium users gain access to their complete test activity history, showing:
+
+- Daily test counts for the entire year
+- Historical test activity data by year
+- Visualization-ready data for activity heatmaps
+
+**API Endpoint:**
+
+```typescript
+GET /users/testActivity
+
+// Response format:
+{
+  "2024": [1, 3, 0, 5, 2, ...], // Tests per day (365 values)
+  "2025": [2, 1, 4, ...]
+}
+```
+
+From `backend/src/api/controllers/user.ts:1238-1261`:
+
+```typescript
+export async function getTestActivity(
+  req: MonkeyRequest,
+): Promise<GetTestActivityResponse> {
+  const premiumFeaturesEnabled = req.ctx.configuration.users.premium.enabled;
+  const userHasPremium = await UserDAL.checkIfUserIsPremium(uid, user);
+
+  if (!premiumFeaturesEnabled) {
+    throw new MonkeyError(503, "Premium features are disabled");
+  }
+
+  if (!userHasPremium) {
+    throw new MonkeyError(503, "User does not have premium");
+  }
+
+  return new MonkeyResponse(
+    "Test activity data retrieved",
+    user.testActivity ?? null,
+  );
+}
+```
+
+<Note>
+  Non-premium users can still see their **current test activity** (last 372 days) via `GET /users/currentTestActivity`. Premium unlocks the full historical data.
+</Note>
+
+### 3. Premium Badge
+
+Premium users receive a visible badge that:
+
+- Displays on leaderboards (when premium features are enabled)
+- Shows on your profile
+- Indicates your support for Monkeytype
+
+**Badge Visibility:**
+
+The premium badge appears in:
+- Daily leaderboards
+- Weekly XP leaderboards
+- Public profiles
+- Friends lists
+
+From `backend/src/api/controllers/result.ts:512-513`:
+
+```typescript
+const isPremium =
+  (await UserDAL.checkIfUserIsPremium(user.uid, user)) || undefined;
+```
+
+<Warning>
+  If premium features are disabled server-wide, the `isPremium` flag is removed from leaderboard entries to maintain privacy.
+</Warning>
+
+## Premium Subscription Types
+
+Premium subscriptions can be either time-limited or lifetime.
+
+### Time-Limited Premium
+
+Subscriptions with an expiration date:
+
+```typescript
+{
+  "premium": {
+    "expirationTimestamp": 1735689600000 // Unix timestamp in milliseconds
+  }
+}
+```
+
+The system checks if the current time is before the expiration:
+
+```typescript
+// From backend/src/dal/user.ts:1196-1213
+export async function checkIfUserIsPremium(
+  uid: string,
+  userInfoOverride?: Pick<DBUser, "premium">,
+): Promise<boolean> {
+  const expirationDate = user.premium?.expirationTimestamp;
+
+  if (expirationDate === undefined) return false;
+  if (expirationDate === -1) return true; // Lifetime
+  return expirationDate > Date.now();
+}
+```
+
+### Lifetime Premium
+
+Permanent premium status indicated by:
+
+```typescript
+{
+  "premium": {
+    "expirationTimestamp": -1  // Special value for lifetime
+  }
+}
+```
+
+<Note>
+  Lifetime premium never expires and provides all premium benefits indefinitely.
+</Note>
+
+## Checking Premium Status
+
+You can verify your premium status through the user data endpoint:
+
+```typescript
+GET /users
+
+// Response includes:
+{
+  "isPremium": true,
+  // ... other user data
+}
+```
+
+## Premium and Leaderboards
+
+Premium status affects leaderboard display:
+
+### Weekly XP Leaderboard
+
+From `backend/src/services/weekly-xp-leaderboard.ts:204-206`:
+
+```typescript
+if (!premiumFeaturesEnabled) {
+  resultsWithRanks = resultsWithRanks.map((it) => omit(it, ["isPremium"]));
+}
+```
+
+Premium badges are only shown when:
+1. Premium features are enabled server-wide
+2. The endpoint explicitly includes premium data
+
+### Daily Leaderboards
+
+Similar logic applies to daily leaderboards. Premium status is included in the entry but may be filtered based on server configuration.
+
+## Result Retrieval Limits
+
+When fetching results, the limit depends on your premium status:
+
+**API Endpoint:**
+
+```typescript
+GET /users/results?limit=500&offset=0
+
+// Premium: Can retrieve up to 10,000 results
+// Regular: Can retrieve up to 1,000 results
+```
+
+From `backend/src/api/controllers/result.ts:97-117`:
+
+```typescript
+let limit =
+  req.query.limit ??
+  Math.min(req.ctx.configuration.results.maxBatchSize, maxLimit);
+
+if (limit + offset > maxLimit) {
+  if (offset < maxLimit) {
+    // Batch is partly in the allowed range
+    limit = maxLimit - offset;
+  } else {
+    throw new MonkeyError(422, `Max results limit of ${maxLimit} exceeded.`);
+  }
+}
+```
+
+<Warning>
+  Even with premium, you cannot retrieve results beyond your limit in a single request. The `maxBatchSize` (typically 1000) controls how many results can be fetched at once. Use pagination with `offset` to retrieve all results.
+</Warning>
+
+## Premium Feature Checks
+
+The system performs two checks for premium features:
+
+1. **Server-wide check**: Are premium features enabled?
+2. **User check**: Does this user have an active premium subscription?
+
+```typescript
+// Example from backend/src/api/controllers/result.ts:88-90
+const premiumFeaturesEnabled = req.ctx.configuration.users.premium.enabled;
+const userHasPremium = await UserDAL.checkIfUserIsPremium(uid);
+```
+
+Both must be true for premium features to work.
+
+## Data Logging
+
+Premium status is logged when results are requested:
+
+```typescript
+// From backend/src/api/controllers/result.ts:124-133
+void addLog(
+  "user_results_requested",
+  {
+    limit,
+    offset,
+    onOrAfterTimestamp,
+    isPremium: userHasPremium,
+  },
+  uid,
+);
+```
+
+This helps track premium feature usage and optimize server resources.
+
+## Technical Details
+
+### Database Schema
+
+Premium information is stored in the user document:
+
+```typescript
+interface DBUser {
+  premium?: {
+    expirationTimestamp: number; // -1 for lifetime, or Unix timestamp
+  };
+  // ... other fields
+}
+```
+
+### Premium Check Aggregation
+
+For MongoDB aggregation pipelines (used in friends leaderboards), premium status is calculated inline:
+
+```typescript
+// From backend/src/dal/user.ts:1337-1350
+isPremium: {
+  $cond: {
+    if: {
+      $or: [
+        { $eq: ["$premium.expirationTimestamp", -1] },
+        {
+          $gt: ["$premium.expirationTimestamp", { $toLong: "$$NOW" }],
+        },
+      ],
+    },
+    then: true,
+    else: "$$REMOVE",
+  },
+}
+```
+
+## Frequently Asked Questions
+
+<AccordionGroup>
+  <Accordion title="What happens when my premium expires?">
+    - You'll revert to the 1,000 result limit
+    - You'll lose access to full test activity history
+    - Your premium badge will be removed
+    - Your existing results beyond 1,000 are **not deleted**, but cannot be retrieved via the API
+  </Accordion>
+  
+  <Accordion title="Can I view test activity without premium?">
+    Yes! You can view your **current test activity** (last 372 days) via:
+    ```typescript
+    GET /users/currentTestActivity
+    ```
+    Premium unlocks full historical data by year.
+  </Accordion>
+  
+  <Accordion title="How do I export my results before premium expires?">
+    Use the results endpoint with pagination to export all your data:
+    ```typescript
+    // Fetch in batches of 1000
+    GET /users/results?limit=1000&offset=0
+    GET /users/results?limit=1000&offset=1000
+    // ... continue until all results retrieved
+    ```
+  </Accordion>
+  
+  <Accordion title="Why don't I see premium badges on leaderboards?">
+    Premium features may be disabled server-wide. Contact your instance administrator to enable them.
+  </Accordion>
+</AccordionGroup>

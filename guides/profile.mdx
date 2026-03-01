@@ -1,0 +1,641 @@
+---
+title: Profile Customization
+description: Customize your Monkeytype profile with bio, keyboard info, social links, badges, and privacy settings.
+---
+
+## Overview
+
+Your Monkeytype profile is your public presence on the platform. Customize it to showcase your typing setup, achievements, and social links. Control what information is visible to other users.
+
+## Accessing Your Profile
+
+Profiles can be accessed via:
+
+```typescript
+// By username
+GET /users/profile/:username
+
+// By UID (with query parameter)
+GET /users/profile/:uid?isUid=true
+```
+
+From `backend/src/api/controllers/user.ts:912-919`:
+
+```typescript
+export async function getProfile(
+  req: MonkeyRequest<GetProfileQuery, undefined, GetProfilePathParams>,
+): Promise<GetProfileResponse> {
+  const { uidOrName } = req.params;
+
+  const user = req.query.isUid
+    ? await UserDAL.getUser(uidOrName, "get user profile")
+    : await UserDAL.getUserByName(uidOrName, "get user profile");
+```
+
+<Note>
+  Usernames are case-insensitive and can be changed once every 30 days.
+</Note>
+
+## Profile Information
+
+### Public Profile Data
+
+All profiles display:
+
+<CardGroup cols={2}>
+  <Card title="Typing Stats" icon="chart-line">
+    - Tests completed
+    - Tests started
+    - Total time typing
+  </Card>
+  
+  <Card title="Personal Bests" icon="trophy">
+    - 15s, 30s, 60s, 120s (time modes)
+    - 10, 25, 50, 100 (word modes)
+  </Card>
+  
+  <Card title="Progression" icon="fire">
+    - Current XP
+    - Current streak
+    - Max streak achieved
+  </Card>
+  
+  <Card title="Identity" icon="user">
+    - Username
+    - Discord avatar (if linked)
+    - Selected badge
+    - Premium status
+  </Card>
+</CardGroup>
+
+From `backend/src/api/controllers/user.ts:950-987`:
+
+```typescript
+const validTimePbs = extractValid(personalBests.time, [
+  "15",
+  "30",
+  "60",
+  "120",
+]);
+const validWordsPbs = extractValid(personalBests.words, [
+  "10",
+  "25",
+  "50",
+  "100",
+]);
+
+const typingStats = {
+  completedTests,
+  startedTests,
+  timeTyping,
+};
+
+const relevantPersonalBests = {
+  time: validTimePbs,
+  words: validWordsPbs,
+};
+
+const baseProfile = {
+  name,
+  banned,
+  addedAt,
+  typingStats,
+  personalBests: relevantPersonalBests,
+  discordId,
+  discordAvatar,
+  xp,
+  streak: streak?.length ?? 0,
+  maxStreak: streak?.maxLength ?? 0,
+  lbOptOut,
+  isPremium: await UserDAL.checkIfUserIsPremium(user.uid, user),
+};
+```
+
+### Profile Details (Optional)
+
+Additional customizable profile information:
+
+```typescript
+interface UserProfileDetails {
+  bio?: string;
+  keyboard?: string;
+  socialProfiles?: {
+    twitter?: string;
+    github?: string;
+    website?: string;
+    // ... other platforms
+  };
+  showActivityOnPublicProfile?: boolean;
+}
+```
+
+## Customizing Your Profile
+
+### Bio
+
+Add a personal bio to introduce yourself:
+
+```typescript
+PATCH /users/profile
+{
+  "bio": "Coffee-fueled typist | 150+ WPM | Mechanical keyboard enthusiast"
+}
+```
+
+<Note>
+  Bios are sanitized to prevent XSS attacks. HTML and scripts are stripped automatically.
+</Note>
+
+From `backend/src/api/controllers/user.ts:1040-1054`:
+
+```typescript
+const profileDetailsUpdates: Partial<UserProfileDetails> = {
+  bio: sanitizeString(bio),
+  keyboard: sanitizeString(keyboard),
+  socialProfiles: Object.fromEntries(
+    Object.entries(socialProfiles ?? {}).map(([key, value]) => [
+      key,
+      sanitizeString(value),
+    ]),
+  ),
+  showActivityOnPublicProfile,
+};
+
+await UserDAL.updateProfile(uid, profileDetailsUpdates, user.inventory);
+```
+
+### Keyboard Information
+
+Share your typing setup:
+
+```typescript
+PATCH /users/profile
+{
+  "keyboard": "Keychron Q1 | Gateron Yellow Pro | GMK Laser keycaps"
+}
+```
+
+### Social Profiles
+
+Link your social media and professional profiles:
+
+```typescript
+PATCH /users/profile
+{
+  "socialProfiles": {
+    "twitter": "myhandle",
+    "github": "myusername",
+    "website": "https://example.com"
+  }
+}
+```
+
+<Warning>
+  All social profile links are sanitized. Only provide usernames or handles, not full URLs (except for website field).
+</Warning>
+
+## Badge Selection
+
+### Selecting a Display Badge
+
+Choose which badge appears on your profile and leaderboard entries:
+
+```typescript
+PATCH /users/profile
+{
+  "selectedBadgeId": 14  // 365-day streak badge
+}
+```
+
+From `backend/src/api/controllers/user.ts:1032-1038`:
+
+```typescript
+user.inventory?.badges.forEach((badge) => {
+  if (badge.id === selectedBadgeId) {
+    badge.selected = true;
+  } else {
+    delete badge.selected;
+  }
+});
+```
+
+<Note>
+  Only one badge can be selected at a time. Selecting a new badge automatically deselects the previous one.
+</Note>
+
+### Badge Inventory
+
+Badges are stored in your user inventory:
+
+```typescript
+interface UserInventory {
+  badges: Badge[];
+}
+
+interface Badge {
+  id: number;
+  selected?: boolean;
+}
+```
+
+Your badge inventory is returned with user data:
+
+```typescript
+GET /users
+
+// Response includes:
+{
+  "inventory": {
+    "badges": [
+      { "id": 14, "selected": true },
+      { "id": 5 },
+      { "id": 12 }
+    ]
+  }
+}
+```
+
+## Privacy Settings
+
+### Test Activity Visibility
+
+Control whether your test activity appears on your public profile:
+
+```typescript
+PATCH /users/profile
+{
+  "showActivityOnPublicProfile": true
+}
+```
+
+From `backend/src/api/controllers/user.ts:1003-1007`:
+
+```typescript
+if (user.profileDetails?.showActivityOnPublicProfile) {
+  profileData.testActivity = generateCurrentTestActivity(user.testActivity);
+} else {
+  delete profileData.testActivity;
+}
+```
+
+When enabled, your profile includes:
+
+```typescript
+{
+  "testActivity": {
+    "testsByDays": [1, 3, 0, 5, 2, ...], // Last 372 days
+    "lastDay": 1735689600000  // Unix timestamp
+  }
+}
+```
+
+<Note>
+  Test activity shows a heatmap of your daily test counts for the past year. This is different from the premium **test activity history** feature which includes all historical data.
+</Note>
+
+### Leaderboard Opt-Out
+
+Completely remove yourself from all leaderboards:
+
+```typescript
+POST /users/optOutOfLeaderboards
+```
+
+From `backend/src/api/controllers/user.ts:414-430`:
+
+```typescript
+export async function optOutOfLeaderboards(
+  req: MonkeyRequest,
+): Promise<MonkeyResponse> {
+  const { uid } = req.ctx.decodedToken;
+
+  await UserDAL.optOutOfLeaderboards(uid);
+  await purgeUserFromDailyLeaderboards(
+    uid,
+    req.ctx.configuration.dailyLeaderboards,
+  );
+  await purgeUserFromXpLeaderboards(
+    uid,
+    req.ctx.configuration.leaderboards.weeklyXp,
+  );
+  void addImportantLog("user_opted_out_of_leaderboards", "", uid);
+
+  return new MonkeyResponse("User opted out of leaderboards", null);
+}
+```
+
+<Warning>
+  Opting out of leaderboards:
+  - Removes you from daily and weekly leaderboards
+  - Hides your rank from friends leaderboards
+  - Cannot be easily reversed (requires contacting support)
+  - You can still earn XP and maintain streaks
+</Warning>
+
+## Viewing Other Profiles
+
+### Public Profile View
+
+When viewing another user's profile, you see:
+
+```typescript
+GET /users/profile/someusername
+
+// Response:
+{
+  "name": "someusername",
+  "banned": false,
+  "addedAt": 1640995200000,
+  "typingStats": {
+    "completedTests": 1500,
+    "startedTests": 1650,
+    "timeTyping": 180000
+  },
+  "personalBests": {
+    "time": {
+      "60": [
+        {
+          "wpm": 120,
+          "acc": 98.5,
+          "consistency": 85,
+          "timestamp": 1735600000000
+        }
+      ]
+    }
+  },
+  "discordId": "123456789",
+  "discordAvatar": "abc123",
+  "xp": 50000,
+  "streak": 45,
+  "maxStreak": 125,
+  "isPremium": true,
+  "details": {
+    "bio": "Love typing!",
+    "keyboard": "Custom build",
+    "socialProfiles": {
+      "github": "someuser"
+    }
+  },
+  "allTimeLbs": {
+    "time": {
+      "15": {
+        "english": { "rank": 250, "count": 10000 }
+      },
+      "60": {
+        "english": { "rank": 500, "count": 15000 }
+      }
+    }
+  },
+  "testActivity": {
+    "testsByDays": [...],
+    "lastDay": 1735689600000
+  },
+  "uid": "abc123def456"
+}
+```
+
+### Banned User Profiles
+
+Banned users have limited profile information:
+
+```typescript
+if (banned) {
+  return new MonkeyResponse("Profile retrived: banned user", baseProfile);
+}
+```
+
+Banned profiles show only:
+- Name
+- Banned status
+- Join date
+- Basic typing stats
+- Personal bests
+
+No detailed information, inventory, or leaderboard ranks are displayed.
+
+## All-Time Leaderboard Ranks
+
+Profiles display your all-time leaderboard rankings:
+
+```typescript
+// From backend/src/api/controllers/user.ts:1146-1199
+async function getAllTimeLbs(uid: string): Promise<AllTimeLbs> {
+  const allTime15English = await LeaderboardsDAL.getRank(
+    "time",
+    "15",
+    "english",
+    uid,
+  );
+
+  const allTime15EnglishCount = await LeaderboardsDAL.getCount(
+    "time",
+    "15",
+    "english",
+  );
+
+  const allTime60English = await LeaderboardsDAL.getRank(
+    "time",
+    "60",
+    "english",
+    uid,
+  );
+
+  const allTime60EnglishCount = await LeaderboardsDAL.getCount(
+    "time",
+    "60",
+    "english",
+  );
+
+  // ...
+
+  return {
+    time: {
+      "15": {
+        english: english15,
+      },
+      "60": {
+        english: english60,
+      },
+    },
+  };
+}
+```
+
+This shows your rank and the total number of ranked users for:
+- 15-second English
+- 60-second English
+
+<Note>
+  All-time leaderboard ranks are only shown for users who meet the minimum typing time requirement and haven't opted out.
+</Note>
+
+## Profile URL Formats
+
+Profiles can be accessed via multiple URL patterns:
+
+```
+/profile/:username          - Most common, case-insensitive
+/profile/:uid?isUid=true   - Using user ID
+```
+
+From `backend/src/api/controllers/user.ts:916-919`:
+
+```typescript
+const user = req.query.isUid
+  ? await UserDAL.getUser(uidOrName, "get user profile")
+  : await UserDAL.getUserByName(uidOrName, "get user profile");
+```
+
+## Updating Your Profile
+
+### Complete Update Example
+
+```typescript
+PATCH /users/profile
+{
+  "bio": "Mechanical keyboard enthusiast and competitive typist",
+  "keyboard": "Keychron Q1 Pro | Gateron Oil King | GMK Laser",
+  "socialProfiles": {
+    "twitter": "mytwitterhandle",
+    "github": "mygithubuser",
+    "website": "https://myblog.com"
+  },
+  "selectedBadgeId": 14,
+  "showActivityOnPublicProfile": true
+}
+```
+
+<Note>
+  All fields are optional. Only include the fields you want to update.
+</Note>
+
+### Input Sanitization
+
+All text inputs are sanitized using `sanitizeString()` from `backend/src/utils/misc.ts` to prevent:
+- XSS attacks
+- HTML injection
+- Script execution
+- SQL injection
+
+## Friends Integration
+
+Your profile is visible to your friends via:
+
+```typescript
+GET /users/friends
+
+// Returns array of friend profiles:
+[
+  {
+    "uid": "...",
+    "name": "friendname",
+    "xp": 25000,
+    "streak": 30,
+    "isPremium": false,
+    // ... other profile data
+  }
+]
+```
+
+From `backend/src/api/controllers/user.ts:1296-1310`:
+
+```typescript
+export async function getFriends(
+  req: MonkeyRequest,
+): Promise<GetFriendsResponse> {
+  const { uid } = req.ctx.decodedToken;
+  const premiumEnabled = req.ctx.configuration.users.premium.enabled;
+  const data = await UserDAL.getFriends(uid);
+
+  if (!premiumEnabled) {
+    for (const friend of data) {
+      delete friend.isPremium;
+    }
+  }
+
+  return new MonkeyResponse("Friends retrieved", data);
+}
+```
+
+Friends see additional context:
+- Last activity timestamp
+- Connection metadata (when friendship was established)
+- Premium status (if enabled)
+
+## Profile Stats Calculation
+
+Typing statistics are calculated from all your completed tests:
+
+- **Completed Tests**: Tests finished without bailing out
+- **Started Tests**: All test attempts (including incomplete)
+- **Time Typing**: Total seconds spent in tests (excluding AFK time)
+
+These values are updated after each test:
+
+```typescript
+// From backend/src/api/controllers/result.ts:471-482
+const afk = completedEvent.afkDuration ?? 0;
+const totalDurationTypedSeconds =
+  completedEvent.testDuration + completedEvent.incompleteTestSeconds - afk;
+void UserDAL.updateTypingStats(
+  uid,
+  completedEvent.restartCount,
+  totalDurationTypedSeconds,
+);
+```
+
+## Frequently Asked Questions
+
+<AccordionGroup>
+  <Accordion title="Can I change my username?">
+    Yes, but only once every 30 days. To change your username:
+    
+    ```typescript
+    PATCH /users/name
+    {
+      "name": "newusername"
+    }
+    ```
+    
+    Your old username is preserved in your name history (not publicly visible).
+  </Accordion>
+  
+  <Accordion title="What happens to my profile if I'm banned?">
+    Banned profiles show limited information:
+    - Basic stats remain visible
+    - Detailed profile info is hidden
+    - You're removed from leaderboards
+    - Friends can still see your basic profile
+  </Accordion>
+  
+  <Accordion title="Can I hide my profile completely?">
+    No, profiles are always visible. However, you can:
+    - Opt out of leaderboards
+    - Hide test activity
+    - Leave bio and social profiles blank
+    - Not select a badge
+  </Accordion>
+  
+  <Accordion title="Why doesn't my badge show up?">
+    Ensure that:
+    - The badge is in your inventory
+    - You've selected it via the profile update endpoint
+    - You haven't selected a different badge since
+    
+    Check your inventory:
+    ```typescript
+    GET /users
+    // Look for inventory.badges[].selected = true
+    ```
+  </Accordion>
+  
+  <Accordion title="How do I link my Discord account?">
+    Discord linking is separate from profile settings:
+    
+    1. Get the OAuth link: `GET /users/discord/oauth`
+    2. Authorize via Discord
+    3. Complete the linking: `POST /users/discord/link`
+    
+    Your Discord avatar will automatically appear on your profile.
+  </Accordion>
+</AccordionGroup>

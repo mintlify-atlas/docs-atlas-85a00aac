@@ -550,6 +550,564 @@ curl -X DELETE https://api.monkeytype.com/ape-keys/{apeKeyId} \
 
 ---
 
+## Tags
+
+### Get Tags
+
+Retrieve all tags for the current user.
+
+```bash
+curl https://api.monkeytype.com/users/tags \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+<ResponseField name="data" type="array">
+  Array of tag objects with ID, name, and personal bests
+</ResponseField>
+
+### Create Tag
+
+Create a new tag.
+
+```bash
+curl -X POST https://api.monkeytype.com/users/tags \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"tagName": "Practice"}'
+```
+
+<ParamField body="tagName" type="string" required>
+  Tag name (1-16 characters)
+</ParamField>
+
+<ResponseField name="data" type="object">
+  Created tag object with _id and name
+</ResponseField>
+
+### Update Tag
+
+Update an existing tag's name.
+
+```bash
+curl -X PATCH https://api.monkeytype.com/users/tags \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tagId": "507f1f77bcf86cd799439011",
+    "newName": "Updated Name"
+  }'
+```
+
+<ParamField body="tagId" type="string" required>
+  Tag ID to update
+</ParamField>
+
+<ParamField body="newName" type="string" required>
+  New tag name (1-16 characters)
+</ParamField>
+
+### Delete Tag
+
+Delete a tag by ID.
+
+```bash
+curl -X DELETE https://api.monkeytype.com/users/tags/{tagId} \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+<ParamField path="tagId" type="string" required>
+  Tag ID to delete
+</ParamField>
+
+### Delete Tag Personal Best
+
+Clear personal bests for a specific tag.
+
+```bash
+curl -X DELETE https://api.monkeytype.com/users/tags/{tagId}/personalBest \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+<ParamField path="tagId" type="string" required>
+  Tag ID to clear personal bests for
+</ParamField>
+
+---
+
+## Custom Themes
+
+### Get Custom Themes
+
+Retrieve all custom themes for the current user.
+
+```bash
+curl https://api.monkeytype.com/users/customThemes \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+<ResponseField name="data" type="array">
+  Array of custom theme objects with colors
+</ResponseField>
+
+### Create Custom Theme
+
+Create a new custom theme.
+
+```bash
+curl -X POST https://api.monkeytype.com/users/customThemes \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Theme",
+    "colors": {
+      "bg": "#323437",
+      "main": "#e2b714",
+      "caret": "#e2b714",
+      "sub": "#646669",
+      "text": "#d1d0c5",
+      "error": "#ca4754",
+      "errorExtra": "#7e2a33",
+      "colorfulError": "#ca4754",
+      "colorfulErrorExtra": "#7e2a33"
+    }
+  }'
+```
+
+<ParamField body="name" type="string" required>
+  Theme name (1-16 characters)
+</ParamField>
+
+<ParamField body="colors" type="object" required>
+  <Expandable title="Theme colors">
+    <ParamField body="bg" type="string" required>
+      Background color (hex)
+    </ParamField>
+    <ParamField body="main" type="string" required>
+      Main color (hex)
+    </ParamField>
+    <ParamField body="caret" type="string" required>
+      Caret color (hex)
+    </ParamField>
+    <ParamField body="sub" type="string" required>
+      Sub color (hex)
+    </ParamField>
+    <ParamField body="text" type="string" required>
+      Text color (hex)
+    </ParamField>
+    <ParamField body="error" type="string" required>
+      Error color (hex)
+    </ParamField>
+    <ParamField body="errorExtra" type="string" required>
+      Error extra color (hex)
+    </ParamField>
+    <ParamField body="colorfulError" type="string" required>
+      Colorful error color (hex)
+    </ParamField>
+    <ParamField body="colorfulErrorExtra" type="string" required>
+      Colorful error extra color (hex)
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="data" type="object">
+  Created theme with _id and name
+</ResponseField>
+
+### Update Custom Theme
+
+Update an existing custom theme.
+
+```bash
+curl -X PATCH https://api.monkeytype.com/users/customThemes \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "themeId": "507f1f77bcf86cd799439011",
+    "theme": {
+      "name": "Updated Theme",
+      "colors": {...}
+    }
+  }'
+```
+
+<ParamField body="themeId" type="string" required>
+  Theme ID to update
+</ParamField>
+
+<ParamField body="theme" type="object" required>
+  Theme object with name and colors
+</ParamField>
+
+### Delete Custom Theme
+
+Delete a custom theme.
+
+```bash
+curl -X DELETE https://api.monkeytype.com/users/customThemes \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"themeId": "507f1f77bcf86cd799439011"}'
+```
+
+<ParamField body="themeId" type="string" required>
+  Theme ID to delete
+</ParamField>
+
+---
+
+## Inbox
+
+### Get Inbox
+
+Retrieve user's inbox messages.
+
+```bash
+curl https://api.monkeytype.com/users/inbox \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+<ResponseField name="data" type="object">
+  <Expandable title="Inbox data">
+    <ResponseField name="inbox" type="array">
+      Array of mail objects
+    </ResponseField>
+    <ResponseField name="maxMail" type="number">
+      Maximum number of messages allowed
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Update Inbox
+
+Mark messages as read or delete them.
+
+```bash
+curl -X PATCH https://api.monkeytype.com/users/inbox \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mailIdsToMarkRead": ["uuid1", "uuid2"],
+    "mailIdsToDelete": ["uuid3"]
+  }'
+```
+
+<ParamField body="mailIdsToMarkRead" type="array">
+  Array of message UUIDs to mark as read
+</ParamField>
+
+<ParamField body="mailIdsToDelete" type="array">
+  Array of message UUIDs to delete
+</ParamField>
+
+---
+
+## Streak
+
+### Get Streak
+
+Retrieve user's streak data.
+
+```bash
+curl https://api.monkeytype.com/users/streak \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+<ResponseField name="data" type="object">
+  <Expandable title="Streak data">
+    <ResponseField name="length" type="number">
+      Current streak length in days
+    </ResponseField>
+    <ResponseField name="maxLength" type="number">
+      Maximum streak length achieved
+    </ResponseField>
+    <ResponseField name="lastResultTimestamp" type="number">
+      Timestamp of last result
+    </ResponseField>
+    <ResponseField name="hourOffset" type="number">
+      Hour offset for streak calculation
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Set Streak Hour Offset
+
+Set the hour offset for streak calculation (can only be set once).
+
+```bash
+curl -X PATCH https://api.monkeytype.com/users/streak/hourOffset \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"hourOffset": -5}'
+```
+
+<ParamField body="hourOffset" type="number" required>
+  Hour offset (-11 to 12)
+</ParamField>
+
+<Warning>
+This can only be set once and cannot be changed.
+</Warning>
+
+---
+
+## Connections
+
+### Get Connections
+
+Retrieve user's connections (friends).
+
+```bash
+curl "https://api.monkeytype.com/connections?status=accepted&type=outgoing" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+<ParamField query="status" type="string">
+  Filter by status: "pending", "accepted", "rejected", "blocked"
+</ParamField>
+
+<ParamField query="type" type="string">
+  Filter by type: "incoming", "outgoing"
+</ParamField>
+
+<ResponseField name="data" type="array">
+  Array of connection objects
+</ResponseField>
+
+### Create Connection
+
+Send a friend request to another user.
+
+```bash
+curl -X POST https://api.monkeytype.com/connections \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"receiverName": "username"}'
+```
+
+<ParamField body="receiverName" type="string" required>
+  Username of the user to connect with
+</ParamField>
+
+<ResponseField name="data" type="object">
+  Created connection object with status "pending"
+</ResponseField>
+
+### Update Connection
+
+Accept, reject, or block a connection request.
+
+```bash
+curl -X PATCH https://api.monkeytype.com/connections/{id} \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "accepted"}'
+```
+
+<ParamField path="id" type="string" required>
+  Connection ID
+</ParamField>
+
+<ParamField body="status" type="string" required>
+  New status: "accepted", "rejected", or "blocked"
+</ParamField>
+
+### Delete Connection
+
+Remove a connection.
+
+```bash
+curl -X DELETE https://api.monkeytype.com/connections/{id} \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+<ParamField path="id" type="string" required>
+  Connection ID to delete
+</ParamField>
+
+---
+
+## Discord Integration
+
+### Get Discord OAuth Link
+
+Get the OAuth link to start Discord integration.
+
+```bash
+curl https://api.monkeytype.com/users/discord/oauth \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+<ResponseField name="data" type="object">
+  <ResponseField name="url" type="string">
+    Discord OAuth URL to redirect user to
+  </ResponseField>
+</ResponseField>
+
+### Link Discord Account
+
+Link a Discord account after OAuth callback.
+
+```bash
+curl -X POST https://api.monkeytype.com/users/discord/link \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tokenType": "Bearer",
+    "accessToken": "DISCORD_ACCESS_TOKEN",
+    "state": "STATE_FROM_OAUTH"
+  }'
+```
+
+<ParamField body="tokenType" type="string" required>
+  Token type from Discord OAuth
+</ParamField>
+
+<ParamField body="accessToken" type="string" required>
+  Access token from Discord OAuth
+</ParamField>
+
+<ParamField body="state" type="string" required>
+  State parameter from OAuth (20 characters)
+</ParamField>
+
+<ResponseField name="data" type="object">
+  <ResponseField name="discordId" type="string">
+    Linked Discord user ID
+  </ResponseField>
+  <ResponseField name="discordAvatar" type="string">
+    Discord avatar URL
+  </ResponseField>
+</ResponseField>
+
+### Unlink Discord Account
+
+Unlink the connected Discord account.
+
+```bash
+curl -X POST https://api.monkeytype.com/users/discord/unlink \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## Additional User Endpoints
+
+### Get Test Activity
+
+Retrieve complete test activity data (premium feature).
+
+```bash
+curl https://api.monkeytype.com/users/testActivity \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+<Warning>
+Requires premium subscription.
+</Warning>
+
+<ResponseField name="data" type="object">
+  Test activity data organized by year and day
+</ResponseField>
+
+### Update Profile
+
+Update user's public profile information.
+
+```bash
+curl -X PATCH https://api.monkeytype.com/users/profile \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bio": "Typing enthusiast",
+    "keyboard": "Custom 60%",
+    "selectedBadgeId": 1,
+    "socialProfiles": {
+      "twitter": "username",
+      "github": "username"
+    },
+    "showActivityOnPublicProfile": true
+  }'
+```
+
+<ParamField body="bio" type="string">
+  User biography
+</ParamField>
+
+<ParamField body="keyboard" type="string">
+  Keyboard information
+</ParamField>
+
+<ParamField body="selectedBadgeId" type="number">
+  ID of badge to display on profile
+</ParamField>
+
+<ParamField body="socialProfiles" type="object">
+  Social media profile usernames
+</ParamField>
+
+<ParamField body="showActivityOnPublicProfile" type="boolean">
+  Whether to show test activity on public profile
+</ParamField>
+
+### Get Favorite Quotes
+
+Retrieve user's favorite quotes.
+
+```bash
+curl https://api.monkeytype.com/users/favoriteQuotes \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+<ResponseField name="data" type="object">
+  Favorite quotes organized by language
+</ResponseField>
+
+### Add Favorite Quote
+
+Add a quote to favorites.
+
+```bash
+curl -X POST https://api.monkeytype.com/users/favoriteQuotes \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "language": "english",
+    "quoteId": "123"
+  }'
+```
+
+<ParamField body="language" type="string" required>
+  Language code
+</ParamField>
+
+<ParamField body="quoteId" type="string" required>
+  Quote ID to add to favorites
+</ParamField>
+
+### Remove Favorite Quote
+
+Remove a quote from favorites.
+
+```bash
+curl -X DELETE https://api.monkeytype.com/users/favoriteQuotes \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "language": "english",
+    "quoteId": "123"
+  }'
+```
+
+<ParamField body="language" type="string" required>
+  Language code
+</ParamField>
+
+<ParamField body="quoteId" type="string" required>
+  Quote ID to remove from favorites
+</ParamField>
+
+---
+
 ## Error Responses
 
 All endpoints may return these common error responses:
